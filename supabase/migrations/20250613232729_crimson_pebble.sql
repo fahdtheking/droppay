@@ -1,5 +1,25 @@
--- DropPay Platform Seed Data
--- Initial data for development and testing
+/*
+  # DropPay Platform Seed Data
+  
+  1. System Settings
+    - Platform configuration
+    - Default rates and limits
+    
+  2. Categories
+    - Product categories with commission rates
+    - Hierarchical structure
+    
+  3. Demo Users
+    - Admin, supplier, client, and reseller accounts
+    - All with password: "password"
+    
+  4. Sample Data
+    - TechCorp Electronics supplier
+    - Products with inventory
+    - Orders and commissions
+    - Team structure
+    - AI agent configurations
+*/
 
 -- =============================================
 -- SYSTEM SETTINGS
