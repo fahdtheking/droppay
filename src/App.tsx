@@ -6,6 +6,8 @@ import SupplierRegistration from './pages/register/SupplierRegistration';
 import ClientRegistration from './pages/register/ClientRegistration';
 import ResellerOnboarding from './pages/register/ResellerOnboarding';
 import ResellerDashboard from './pages/dashboard/ResellerDashboard';
+import SupplierDashboard from './pages/dashboard/SupplierDashboard';
+import ClientDashboard from './pages/dashboard/ClientDashboard';
 import AdminControlCenter from './pages/dashboard/AdminControlCenter';
 import WalletPage from './pages/dashboard/WalletPage';
 import TeamManagement from './pages/dashboard/TeamManagement';
@@ -26,6 +28,8 @@ function App() {
           <Route path="/register/client" element={<ClientRegistration />} />
           <Route path="/register/reseller" element={<ResellerOnboarding />} />
           <Route path="/dashboard/reseller" element={<ResellerDashboard />} />
+          <Route path="/dashboard/supplier" element={<SupplierDashboard />} />
+          <Route path="/dashboard/client" element={<ClientDashboard />} />
           <Route path="/dashboard/admin" element={<AdminControlCenter />} />
           <Route path="/dashboard/wallet" element={<WalletPage />} />
           <Route path="/dashboard/team" element={<TeamManagement />} />
