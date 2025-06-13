@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Wallet, Users, Settings, Zap, BarChart3 } from 'lucide-react';
+import { Menu, X, Wallet, Users, Settings, Zap, BarChart3, UserPlus } from 'lucide-react';
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,6 +10,7 @@ const Navigation = () => {
     { path: '/dashboard/reseller', label: 'Dashboard', icon: BarChart3 },
     { path: '/dashboard/wallet', label: 'Wallet', icon: Wallet },
     { path: '/dashboard/team', label: 'Team', icon: Users },
+    { path: '/dashboard/collaboration', label: 'Collaboration', icon: UserPlus },
     { path: '/tools/campaign-studio', label: 'Studio', icon: Zap },
     { path: '/tools/simulator', label: 'Simulator', icon: Settings },
   ];
