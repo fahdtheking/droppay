@@ -12,6 +12,8 @@ import TeamManagement from './pages/dashboard/TeamManagement';
 import TeamCollaboration from './pages/dashboard/TeamCollaboration';
 import CampaignStudio from './pages/tools/CampaignStudio';
 import TransactionSimulator from './pages/tools/TransactionSimulator';
+import SupplierPortal from './pages/SupplierPortal';
+import ResellersMarketplace from './pages/ResellersMarketplace';
 
 function App() {
   return (
@@ -30,6 +32,8 @@ function App() {
           <Route path="/dashboard/collaboration" element={<TeamCollaboration />} />
           <Route path="/tools/campaign-studio" element={<CampaignStudio />} />
           <Route path="/tools/simulator" element={<TransactionSimulator />} />
+          <Route path="/supplier/portal" element={<SupplierPortal />} />
+          <Route path="/marketplace" element={<ResellersMarketplace />} />
         </Routes>
       </div>
     </Router>
