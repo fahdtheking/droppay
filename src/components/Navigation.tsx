@@ -57,7 +57,7 @@ const Navigation = () => {
         return [
           { path: '/dashboard/client', label: 'Dashboard', icon: BarChart3 },
           { path: '/marketplace', label: 'Shop', icon: ShoppingCart },
-          { path: '/dashboard/wallet', label: 'Wallet', icon: Wallet },
+          { path: '/orders', label: 'My Orders', icon: Package },
         ];
       
       case 'admin':

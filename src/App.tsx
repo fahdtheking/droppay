@@ -20,6 +20,7 @@ import CampaignStudio from './pages/tools/CampaignStudio';
 import TransactionSimulator from './pages/tools/TransactionSimulator';
 import SupplierPortal from './pages/SupplierPortal';
 import ResellersMarketplace from './pages/ResellersMarketplace';
+import OrdersPage from './pages/OrdersPage';
 
 function App() {
   return (
@@ -54,6 +55,12 @@ function App() {
               <ProtectedRoute allowedRoles={['client']}>
                 <Navigation />
                 <ClientDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/orders" element={
+              <ProtectedRoute allowedRoles={['client']}>
+                <Navigation />
+                <OrdersPage />
               </ProtectedRoute>
             } />
 
@@ -99,7 +106,7 @@ function App() {
 
             {/* Protected Routes - Multiple Roles */}
             <Route path="/dashboard/wallet" element={
-              <ProtectedRoute allowedRoles={['supplier', 'client', 'reseller', 'admin']}>
+              <ProtectedRoute allowedRoles={['supplier', 'reseller', 'admin']}>
                 <Navigation />
                 <WalletPage />
               </ProtectedRoute>

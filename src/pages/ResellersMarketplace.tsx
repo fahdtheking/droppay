@@ -31,7 +31,10 @@ import {
   CheckCircle,
   Zap,
   UserPlus,
-  ArrowRight
+  ArrowRight,
+  X,
+  CreditCard,
+  Trash2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -46,6 +49,8 @@ const ResellersMarketplace = () => {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showLinkGenerator, setShowLinkGenerator] = useState<any>(null);
   const [showShareModal, setShowShareModal] = useState<any>(null);
+  const [showCart, setShowCart] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
   const [copiedLink, setCopiedLink] = useState<string>('');
 
   // Check if user is a reseller (can generate referral links)
@@ -176,6 +181,28 @@ const ResellersMarketplace = () => {
     }
   };
 
+  const removeFromCart = (productId: number) => {
+    setCart(cart.filter(item => item.id !== productId));
+  };
+
+  const updateCartQuantity = (productId: number, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    setCart(cart.map(item => 
+      item.id === productId ? { ...item, quantity } : item
+    ));
+  };
+
+  const getCartTotal = () => {
+    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+  };
+
+  const getCartItemCount = () => {
+    return cart.reduce((total, item) => total + item.quantity, 0);
+  };
+
   // Generate unique tracking link for reseller
   const generateTrackingLink = (product: any, campaign?: string) => {
     if (!resellerId) return `https://${product.supplierUrl}/product/${product.slug}`;
@@ -271,6 +298,14 @@ const ResellersMarketplace = () => {
 
   const pageInfo = getPageInfo();
 
+  const handleCheckout = () => {
+    // Simulate checkout process
+    alert(`Order placed successfully! Total: $${getCartTotal().toFixed(2)}\n\nYou will receive an email confirmation shortly.`);
+    setCart([]);
+    setShowCart(false);
+    setShowCheckout(false);
+  };
+
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-7xl mx-auto">
@@ -287,12 +322,15 @@ const ResellersMarketplace = () => {
                 <span>My Store</span>
               </button>
             )}
-            <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors relative">
+            <button 
+              onClick={() => setShowCart(true)}
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors relative"
+            >
               <ShoppingCart size={16} />
-              <span>Cart ({cart.length})</span>
-              {cart.length > 0 && (
+              <span>Cart ({getCartItemCount()})</span>
+              {getCartItemCount() > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                  {getCartItemCount()}
                 </span>
               )}
             </button>
@@ -349,9 +387,12 @@ const ResellersMarketplace = () => {
                 </div>
               </div>
               <div className="flex space-x-3">
-                <button className="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                <Link 
+                  to="/orders"
+                  className="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                >
                   Track Orders
-                </button>
+                </Link>
                 <button className="bg-white/20 text-white px-4 py-2 rounded-lg hover:bg-white/30 transition-colors">
                   View Wishlist
                 </button>
@@ -609,6 +650,193 @@ const ResellersMarketplace = () => {
           ))}
         </div>
 
+        {/* Cart Modal */}
+        {showCart && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">Shopping Cart</h2>
+                  <button 
+                    onClick={() => setShowCart(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                {cart.length === 0 ? (
+                  <div className="text-center py-12">
+                    <ShoppingCart className="mx-auto text-gray-300 mb-4" size={48} />
+                    <p className="text-gray-500">Your cart is empty</p>
+                    <button 
+                      onClick={() => setShowCart(false)}
+                      className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Continue Shopping
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-4 mb-6">
+                      {cart.map((item) => (
+                        <div key={item.id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
+                          <img 
+                            src={item.image} 
+                            alt={item.name}
+                            className="w-16 h-16 object-cover rounded-lg"
+                          />
+                          <div className="flex-1">
+                            <h3 className="font-medium text-gray-900">{item.name}</h3>
+                            <p className="text-sm text-gray-600">{item.supplier}</p>
+                            <p className="text-lg font-bold text-gray-900">${item.price}</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button 
+                              onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
+                              className="p-1 border border-gray-300 rounded hover:bg-gray-50"
+                            >
+                              <Minus size={16} />
+                            </button>
+                            <span className="w-8 text-center">{item.quantity}</span>
+                            <button 
+                              onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
+                              className="p-1 border border-gray-300 rounded hover:bg-gray-50"
+                            >
+                              <Plus size={16} />
+                            </button>
+                          </div>
+                          <button 
+                            onClick={() => removeFromCart(item.id)}
+                            className="p-2 text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="border-t border-gray-200 pt-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-lg font-semibold text-gray-900">Total:</span>
+                        <span className="text-2xl font-bold text-gray-900">${getCartTotal().toFixed(2)}</span>
+                      </div>
+                      
+                      <div className="flex space-x-3">
+                        <button 
+                          onClick={() => setShowCart(false)}
+                          className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          Continue Shopping
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setShowCart(false);
+                            setShowCheckout(true);
+                          }}
+                          className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                        >
+                          <CreditCard size={16} />
+                          <span>Checkout</span>
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Checkout Modal */}
+        {showCheckout && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-gray-900">Checkout</h2>
+                  <button 
+                    onClick={() => setShowCheckout(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Payment Method
+                    </label>
+                    <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      <option>Credit/Debit Card</option>
+                      <option>PayPal</option>
+                      <option>Apple Pay</option>
+                      <option>Google Pay</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Card Number
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="1234 5678 9012 3456"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Expiry Date
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="MM/YY"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        CVV
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="123"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900">Total Amount:</span>
+                    <span className="text-xl font-bold text-gray-900">${getCartTotal().toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="flex space-x-3">
+                  <button 
+                    onClick={() => setShowCheckout(false)}
+                    className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleCheckout}
+                    className="flex-1 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Place Order
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Reseller-only Modals */}
         {isReseller && (
           <>
@@ -626,7 +854,7 @@ const ResellersMarketplace = () => {
                         onClick={() => setShowLinkGenerator(null)}
                         className="text-gray-400 hover:text-gray-600"
                       >
-                        ✕
+                        <X size={24} />
                       </button>
                     </div>
 
@@ -768,7 +996,7 @@ const ResellersMarketplace = () => {
                         onClick={() => setShowShareModal(null)}
                         className="text-gray-400 hover:text-gray-600"
                       >
-                        ✕
+                        <X size={24} />
                       </button>
                     </div>
 
@@ -821,7 +1049,7 @@ const ResellersMarketplace = () => {
                     onClick={() => setSelectedProduct(null)}
                     className="text-gray-400 hover:text-gray-600"
                   >
-                    ✕
+                    <X size={24} />
                   </button>
                 </div>
 
