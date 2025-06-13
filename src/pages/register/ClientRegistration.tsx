@@ -64,6 +64,8 @@ const ClientRegistration = () => {
     }
   };
 
+  const isEmailAlreadyRegisteredError = error.includes('This email is already registered') || error.includes('User already registered');
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Navigation Header */}
@@ -120,6 +122,16 @@ const ClientRegistration = () => {
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <p className="text-red-800 text-sm">{error}</p>
+                  {isEmailAlreadyRegisteredError && (
+                    <div className="mt-2">
+                      <Link
+                        to="/login"
+                        className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        Go to Login Page →
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
 
