@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Shield, Zap, Globe, TrendingUp, Users, Wallet } from 'lucide-react';
+import { ArrowRight, Shield, Zap, Globe, TrendingUp, Users, Wallet, Store, ShoppingCart } from 'lucide-react';
 import AgentSlot from '../components/AgentSlot';
 
 const LandingPage = () => {
@@ -30,27 +30,45 @@ const LandingPage = () => {
   const roles = [
     {
       title: 'Join as Supplier',
-      description: 'Expand your business reach with our global marketplace',
-      icon: Wallet,
+      description: 'Create your marketplace and manage products with our Shopify-like platform',
+      icon: Store,
       color: 'from-blue-600 to-blue-700',
       hoverColor: 'hover:from-blue-700 hover:to-blue-800',
-      link: '/register/supplier'
+      link: '/register/supplier',
+      features: [
+        'Create your own branded marketplace',
+        'Set commission rates for resellers',
+        'Manage inventory and track orders',
+        'Unique marketplace URL for each supplier'
+      ]
     },
     {
-      title: 'Buy as Client',
-      description: 'Access premium products with transparent pricing',
-      icon: Shield,
+      title: 'Shop as Client',
+      description: 'Access premium products from verified suppliers worldwide',
+      icon: ShoppingCart,
       color: 'from-green-600 to-green-700',
       hoverColor: 'hover:from-green-700 hover:to-green-800',
-      link: '/register/client'
+      link: '/register/client',
+      features: [
+        'Browse verified supplier marketplaces',
+        'Transparent pricing and reviews',
+        'Secure payment processing',
+        'Track orders and deliveries'
+      ]
     },
     {
       title: 'Earn as Reseller',
-      description: 'Build your network and earn with our reseller program',
+      description: 'Access supplier marketplaces and earn commissions on every sale',
       icon: Users,
       color: 'from-purple-600 to-purple-700',
       hoverColor: 'hover:from-purple-700 hover:to-purple-800',
-      link: '/register/reseller'
+      link: '/register/reseller',
+      features: [
+        'Access exclusive supplier marketplaces',
+        'Get unique tracking links for each product',
+        'Earn commissions on successful sales',
+        'AI-powered marketing tools and analytics'
+      ]
     }
   ];
 
@@ -62,13 +80,13 @@ const LandingPage = () => {
           <h1 className="text-4xl sm:text-6xl font-bold text-gray-900 mb-6">
             AI-Powered{' '}
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Fintech
+              Marketplace
             </span>{' '}
-            Revolution
+            Ecosystem
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-12">
-            Connect suppliers, clients, and resellers in a seamless ecosystem powered by 
-            advanced AI technology. Scale your business with intelligent tools and global reach.
+            Connect suppliers with their own marketplaces, enable resellers to earn commissions, 
+            and provide clients access to premium products - all powered by advanced AI technology.
           </p>
 
           {/* AI Agent Spotlight */}
@@ -80,13 +98,12 @@ const LandingPage = () => {
           </div>
 
           {/* Role Cards */}
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {roles.map((role, index) => {
               const Icon = role.icon;
               return (
-                <Link
+                <div
                   key={index}
-                  to={role.link}
                   className={`group relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100`}
                 >
                   <div className={`w-16 h-16 bg-gradient-to-r ${role.color} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
@@ -94,13 +111,57 @@ const LandingPage = () => {
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-3">{role.title}</h3>
                   <p className="text-gray-600 mb-6">{role.description}</p>
-                  <div className="flex items-center text-blue-600 font-semibold group-hover:text-purple-600 transition-colors">
+                  
+                  {/* Features List */}
+                  <ul className="text-left space-y-2 mb-6">
+                    {role.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-start text-sm text-gray-600">
+                        <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mr-3 mt-2 flex-shrink-0"></div>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <Link
+                    to={role.link}
+                    className="inline-flex items-center text-blue-600 font-semibold group-hover:text-purple-600 transition-colors"
+                  >
                     Get Started
                     <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={18} />
-                  </div>
-                </Link>
+                  </Link>
+                </div>
               );
             })}
+          </div>
+
+          {/* How It Works */}
+          <div className="mt-20">
+            <h2 className="text-3xl font-bold text-gray-900 mb-12">How DropPay Works</h2>
+            <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-blue-600 font-bold">1</span>
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Suppliers Create Marketplaces</h3>
+                <p className="text-gray-600 text-sm">Suppliers register and create their own branded marketplaces with unique URLs, just like Shopify stores.</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-purple-600 font-bold">2</span>
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Resellers Get Access</h3>
+                <p className="text-gray-600 text-sm">Authenticated resellers access supplier marketplaces and get unique tracking links for each product.</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-green-600 font-bold">3</span>
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Clients Purchase</h3>
+                <p className="text-gray-600 text-sm">External clients purchase through tracked links, and resellers earn commissions automatically.</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -113,7 +174,7 @@ const LandingPage = () => {
               Why Choose DropPay?
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Experience the future of financial technology with our comprehensive platform
+              Experience the future of marketplace technology with our comprehensive platform
             </p>
           </div>
 
@@ -143,13 +204,22 @@ const LandingPage = () => {
           <p className="text-xl text-blue-100 mb-8">
             Join thousands of businesses already using DropPay to scale their operations
           </p>
-          <Link
-            to="/register/reseller"
-            className="inline-flex items-center bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-1 duration-300"
-          >
-            Start Your Journey
-            <ArrowRight className="ml-2" size={20} />
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/register/supplier"
+              className="inline-flex items-center bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-1 duration-300"
+            >
+              Start as Supplier
+              <ArrowRight className="ml-2" size={20} />
+            </Link>
+            <Link
+              to="/register/reseller"
+              className="inline-flex items-center bg-white/20 text-white border-2 border-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/30 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-1 duration-300"
+            >
+              Become Reseller
+              <ArrowRight className="ml-2" size={20} />
+            </Link>
+          </div>
         </div>
       </section>
     </div>
