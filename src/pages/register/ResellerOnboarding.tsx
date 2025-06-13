@@ -1,0 +1,323 @@
+import React, { useState } from 'react';
+import { Users, User, CreditCard, FileText, Check } from 'lucide-react';
+import AgentSlot from '../../components/AgentSlot';
+
+const ResellerOnboarding = () => {
+  const [selectedRole, setSelectedRole] = useState<'solo' | 'team' | null>(null);
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    country: '',
+    bankName: '',
+    accountNumber: '',
+    routingNumber: '',
+    paypalEmail: '',
+    agreementSigned: false
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    alert('Reseller onboarding completed successfully!');
+  };
+
+  return (
+    <div className="min-h-screen py-12 px-4">
+      <div className="max-w-3xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Reseller Onboarding</h1>
+          <p className="text-gray-600">Start earning with our powerful reseller program</p>
+        </div>
+
+        {/* AI Agent */}
+        <div className="mb-8">
+          <AgentSlot 
+            agentName="Reseller Success AI"
+            description="I'll guide you through the setup and help optimize your earning potential"
+          />
+        </div>
+
+        {/* Role Selection */}
+        {!selectedRole && (
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Choose Your Role</h2>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <div 
+                onClick={() => setSelectedRole('solo')}
+                className="cursor-pointer group border-2 border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300"
+              >
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors">
+                    <User className="text-blue-600" size={32} />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">Solo Reseller</h3>
+                  <p className="text-gray-600 mb-4">Perfect for individuals looking to earn extra income</p>
+                  <ul className="text-sm text-gray-500 space-y-1">
+                    <li>• 10-15% commission on sales</li>
+                    <li>• Personal dashboard</li>
+                    <li>• Marketing materials provided</li>
+                    <li>• Weekly payouts</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div 
+                onClick={() => setSelectedRole('team')}
+                className="cursor-pointer group border-2 border-gray-200 rounded-xl p-6 hover:border-purple-500 hover:bg-purple-50 transition-all duration-300"
+              >
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-200 transition-colors">
+                    <Users className="text-purple-600" size={32} />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">Team Leader</h3>
+                  <p className="text-gray-600 mb-4">Build and manage your own reseller network</p>
+                  <ul className="text-sm text-gray-500 space-y-1">
+                    <li>• 15-25% commission on sales</li>
+                    <li>• 5% bonus from team sales</li>
+                    <li>• Team management tools</li>
+                    <li>• Advanced analytics</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Onboarding Form */}
+        {selectedRole && (
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {selectedRole === 'solo' ? 'Solo Reseller' : 'Team Leader'} Setup
+              </h2>
+              <button
+                onClick={() => setSelectedRole(null)}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                Change Role
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Personal Information */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2 mb-4">
+                  <User className="text-blue-600" size={20} />
+                  <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter your full name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="your@email.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Country *
+                    </label>
+                    <select
+                      name="country"
+                      value={formData.country}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select your country</option>
+                      <option value="US">United States</option>
+                      <option value="UK">United Kingdom</option>
+                      <option value="CA">Canada</option>
+                      <option value="AU">Australia</option>
+                      <option value="DE">Germany</option>
+                      <option value="FR">France</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payout Information */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2 mb-4">
+                  <CreditCard className="text-blue-600" size={20} />
+                  <h3 className="text-lg font-semibold text-gray-900">Payout Information</h3>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Bank Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="bankName"
+                      value={formData.bankName}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Your bank name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Account Number *
+                    </label>
+                    <input
+                      type="text"
+                      name="accountNumber"
+                      value={formData.accountNumber}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Account number"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Routing Number *
+                    </label>
+                    <input
+                      type="text"
+                      name="routingNumber"
+                      value={formData.routingNumber}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Routing number"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      PayPal Email (Optional)
+                    </label>
+                    <input
+                      type="email"
+                      name="paypalEmail"
+                      value={formData.paypalEmail}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="paypal@email.com"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Legal Agreement */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2 mb-4">
+                  <FileText className="text-blue-600" size={20} />
+                  <h3 className="text-lg font-semibold text-gray-900">Legal Agreement</h3>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6 max-h-48 overflow-y-auto">
+                  <h4 className="font-semibold mb-2">Reseller Agreement Summary</h4>
+                  <p className="text-sm text-gray-600 mb-2">
+                    By joining as a reseller, you agree to:
+                  </p>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• Promote DropPay products ethically and accurately</li>
+                    <li>• Maintain customer confidentiality and data protection</li>
+                    <li>• Follow all marketing guidelines and brand standards</li>
+                    <li>• Report sales activities accurately and transparently</li>
+                    <li>• Comply with all applicable laws and regulations</li>
+                  </ul>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    name="agreementSigned"
+                    checked={formData.agreementSigned}
+                    onChange={handleInputChange}
+                    required
+                    className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label className="text-sm text-gray-600">
+                    I have read and agree to the{' '}
+                    <a href="#" className="text-blue-600 hover:underline">Reseller Agreement</a>
+                    {' '}and{' '}
+                    <a href="#" className="text-blue-600 hover:underline">Terms of Service</a>
+                  </label>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={!formData.agreementSigned}
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-300"
+              >
+                Complete Onboarding
+              </button>
+            </form>
+
+            {/* Next Steps */}
+            <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h3 className="font-semibold text-blue-800 mb-2">What happens next?</h3>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• Account verification (24-48 hours)</li>
+                <li>• Access to reseller dashboard and materials</li>
+                <li>• Welcome training session scheduled</li>
+                <li>• First commission tracking begins</li>
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ResellerOnboarding;
