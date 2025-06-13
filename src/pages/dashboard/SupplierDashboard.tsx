@@ -350,7 +350,7 @@ const SupplierDashboard = () => {
                 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Response Time</span>
-                  <span className="text-sm font-medium text-gray-900">< 2 hours</span>
+                  <span className="text-sm font-medium text-gray-900">{"< 2 hours"}</span>
                 </div>
               </div>
             </div>
