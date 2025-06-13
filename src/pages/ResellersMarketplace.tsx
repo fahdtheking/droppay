@@ -18,7 +18,18 @@ import {
   BarChart3,
   TrendingUp,
   Users,
-  Globe
+  Globe,
+  QrCode,
+  Download,
+  MessageSquare,
+  Instagram,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Mail,
+  Link as LinkIcon,
+  CheckCircle,
+  Zap
 } from 'lucide-react';
 import AgentSlot from '../components/AgentSlot';
 
@@ -28,6 +39,13 @@ const ResellersMarketplace = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [cart, setCart] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [showLinkGenerator, setShowLinkGenerator] = useState<any>(null);
+  const [showShareModal, setShowShareModal] = useState<any>(null);
+  const [copiedLink, setCopiedLink] = useState<string>('');
+
+  // Mock reseller ID - in real app this would come from auth context
+  const resellerId = 'sarah-j-2024';
+  const resellerName = 'Sarah Johnson';
 
   const categories = [
     { id: 'all', label: 'All Products', count: 1247 },
@@ -60,7 +78,8 @@ const ResellersMarketplace = () => {
       features: ['Noise Cancelling', 'Wireless', '20hr Battery'],
       description: 'Premium wireless headphones with active noise cancellation and superior sound quality.',
       supplierUrl: 'droppay.com/store/techcorp',
-      trending: true
+      trending: true,
+      slug: 'wireless-bluetooth-headphones'
     },
     {
       id: 2,
@@ -81,7 +100,8 @@ const ResellersMarketplace = () => {
       features: ['Heart Rate Monitor', 'GPS', 'Waterproof'],
       description: 'Advanced fitness tracker with comprehensive health monitoring features.',
       supplierUrl: 'droppay.com/store/healthtech',
-      trending: false
+      trending: false,
+      slug: 'smart-fitness-tracker'
     },
     {
       id: 3,
@@ -102,7 +122,8 @@ const ResellersMarketplace = () => {
       features: ['Fast Charging', 'Compact', 'LED Display'],
       description: 'High-capacity portable charger with fast charging technology.',
       supplierUrl: 'droppay.com/store/powermax',
-      trending: true
+      trending: true,
+      slug: 'portable-phone-charger'
     },
     {
       id: 4,
@@ -123,7 +144,8 @@ const ResellersMarketplace = () => {
       features: ['Organic', 'Cruelty-Free', 'All Skin Types'],
       description: 'Complete organic skincare routine with natural ingredients.',
       supplierUrl: 'droppay.com/store/naturalbeauty',
-      trending: false
+      trending: false,
+      slug: 'organic-skincare-set'
     }
   ];
 
@@ -144,18 +166,69 @@ const ResellersMarketplace = () => {
     }
   };
 
-  const generateUniqueLink = (product: any) => {
-    const baseUrl = product.supplierUrl;
-    const productSlug = product.name.toLowerCase().replace(/\s+/g, '-');
-    const resellerCode = 'your-reseller-id'; // This would be dynamic
-    return `${baseUrl}/${productSlug}?ref=${resellerCode}`;
+  // Generate unique tracking link for reseller
+  const generateTrackingLink = (product: any, campaign?: string) => {
+    const baseUrl = `https://${product.supplierUrl}`;
+    const productPath = `/product/${product.slug}`;
+    const trackingParams = new URLSearchParams({
+      ref: resellerId,
+      utm_source: 'droppay',
+      utm_medium: 'referral',
+      utm_campaign: campaign || 'general',
+      utm_content: product.id.toString()
+    });
+    
+    return `${baseUrl}${productPath}?${trackingParams.toString()}`;
   };
 
-  const copyUniqueLink = (product: any) => {
-    const link = generateUniqueLink(product);
-    navigator.clipboard.writeText(`https://${link}`);
-    alert('Unique tracking link copied to clipboard!');
+  // Generate short link for easier sharing
+  const generateShortLink = (product: any, campaign?: string) => {
+    const trackingId = `${resellerId}-${product.id}-${Date.now().toString(36)}`;
+    return `https://droppay.link/${trackingId}`;
   };
+
+  const copyToClipboard = async (text: string, type: string = 'link') => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedLink(text);
+      setTimeout(() => setCopiedLink(''), 2000);
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+    }
+  };
+
+  const shareToSocialMedia = (product: any, platform: string) => {
+    const trackingLink = generateTrackingLink(product, platform);
+    const message = `Check out this amazing ${product.name} - ${product.description.substring(0, 100)}... Get yours now!`;
+    
+    const urls = {
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(trackingLink)}&quote=${encodeURIComponent(message)}`,
+      twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(trackingLink)}&text=${encodeURIComponent(message)}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(trackingLink)}`,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(message + ' ' + trackingLink)}`,
+      telegram: `https://t.me/share/url?url=${encodeURIComponent(trackingLink)}&text=${encodeURIComponent(message)}`,
+      email: `mailto:?subject=${encodeURIComponent(`Check out ${product.name}`)}&body=${encodeURIComponent(message + '\n\n' + trackingLink)}`
+    };
+
+    if (urls[platform as keyof typeof urls]) {
+      window.open(urls[platform as keyof typeof urls], '_blank', 'width=600,height=400');
+    }
+  };
+
+  const generateQRCode = (product: any) => {
+    const trackingLink = generateTrackingLink(product, 'qr-code');
+    // In a real app, you'd use a QR code library like qrcode.js
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(trackingLink)}`;
+  };
+
+  const socialPlatforms = [
+    { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'bg-blue-600' },
+    { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'bg-sky-500' },
+    { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'bg-blue-700' },
+    { id: 'whatsapp', name: 'WhatsApp', icon: MessageSquare, color: 'bg-green-500' },
+    { id: 'telegram', name: 'Telegram', icon: MessageSquare, color: 'bg-blue-500' },
+    { id: 'email', name: 'Email', icon: Mail, color: 'bg-gray-600' }
+  ];
 
   return (
     <div className="min-h-screen py-8 px-4">
@@ -164,7 +237,7 @@ const ResellersMarketplace = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Resellers Marketplace</h1>
-            <p className="text-gray-600">Discover products to resell and earn commissions</p>
+            <p className="text-gray-600">Discover products to resell and earn commissions with unique tracking links</p>
           </div>
           <div className="flex items-center space-x-3 mt-4 sm:mt-0">
             <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
@@ -187,8 +260,30 @@ const ResellersMarketplace = () => {
         <div className="mb-8">
           <AgentSlot 
             agentName="Product Discovery AI"
-            description="I help you find profitable products and optimize your reselling strategy"
+            description="I help you find profitable products and generate optimized referral links for maximum conversions"
           />
+        </div>
+
+        {/* Reseller Stats Banner */}
+        <div className="bg-gradient-to-r from-green-600 to-blue-600 rounded-xl p-6 mb-8 text-white">
+          <div className="grid md:grid-cols-4 gap-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold">$2,847</div>
+              <div className="text-green-100 text-sm">Total Earnings</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">156</div>
+              <div className="text-green-100 text-sm">Products Shared</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">89</div>
+              <div className="text-green-100 text-sm">Successful Sales</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">3.2%</div>
+              <div className="text-green-100 text-sm">Conversion Rate</div>
+            </div>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -264,16 +359,22 @@ const ResellersMarketplace = () => {
                   <button 
                     onClick={() => setSelectedProduct(product)}
                     className="p-2 bg-white rounded-full hover:bg-gray-50 transition-colors"
+                    title="View Details"
                   >
                     <Eye size={16} className="text-gray-600" />
                   </button>
                   <button 
-                    onClick={() => copyUniqueLink(product)}
+                    onClick={() => setShowLinkGenerator(product)}
                     className="p-2 bg-white rounded-full hover:bg-gray-50 transition-colors"
+                    title="Generate Link"
                   >
-                    <Copy size={16} className="text-gray-600" />
+                    <LinkIcon size={16} className="text-gray-600" />
                   </button>
-                  <button className="p-2 bg-white rounded-full hover:bg-gray-50 transition-colors">
+                  <button 
+                    onClick={() => setShowShareModal(product)}
+                    className="p-2 bg-white rounded-full hover:bg-gray-50 transition-colors"
+                    title="Share Product"
+                  >
                     <Share2 size={16} className="text-gray-600" />
                   </button>
                 </div>
@@ -346,22 +447,26 @@ const ResellersMarketplace = () => {
                 {/* Actions */}
                 <div className="space-y-2">
                   <button 
-                    onClick={() => addToCart(product)}
-                    className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    onClick={() => setShowLinkGenerator(product)}
+                    className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center space-x-2"
                   >
-                    Add to Cart
+                    <LinkIcon size={16} />
+                    <span>Get Referral Link</span>
                   </button>
                   <div className="grid grid-cols-2 gap-2">
                     <button 
-                      onClick={() => copyUniqueLink(product)}
+                      onClick={() => addToCart(product)}
                       className="flex items-center justify-center space-x-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
                     >
-                      <Copy size={14} />
-                      <span>Get Link</span>
+                      <Plus size={14} />
+                      <span>Cart</span>
                     </button>
-                    <button className="flex items-center justify-center space-x-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
-                      <ExternalLink size={14} />
-                      <span>Visit Store</span>
+                    <button 
+                      onClick={() => setShowShareModal(product)}
+                      className="flex items-center justify-center space-x-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                    >
+                      <Share2 size={14} />
+                      <span>Share</span>
                     </button>
                   </div>
                 </div>
@@ -369,6 +474,202 @@ const ResellersMarketplace = () => {
             </div>
           ))}
         </div>
+
+        {/* Link Generator Modal */}
+        {showLinkGenerator && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Generate Referral Link</h2>
+                    <p className="text-gray-600">{showLinkGenerator.name}</p>
+                  </div>
+                  <button 
+                    onClick={() => setShowLinkGenerator(null)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Campaign Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Campaign Name (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., summer-sale, instagram-promo"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Help track which campaigns perform best
+                    </p>
+                  </div>
+
+                  {/* Generated Links */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Full Tracking Link
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        <code className="flex-1 bg-gray-50 px-3 py-2 rounded border text-sm break-all">
+                          {generateTrackingLink(showLinkGenerator)}
+                        </code>
+                        <button 
+                          onClick={() => copyToClipboard(generateTrackingLink(showLinkGenerator))}
+                          className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        >
+                          {copiedLink === generateTrackingLink(showLinkGenerator) ? (
+                            <CheckCircle size={16} />
+                          ) : (
+                            <Copy size={16} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Short Link (Easier to Share)
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        <code className="flex-1 bg-gray-50 px-3 py-2 rounded border text-sm">
+                          {generateShortLink(showLinkGenerator)}
+                        </code>
+                        <button 
+                          onClick={() => copyToClipboard(generateShortLink(showLinkGenerator))}
+                          className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        >
+                          {copiedLink === generateShortLink(showLinkGenerator) ? (
+                            <CheckCircle size={16} />
+                          ) : (
+                            <Copy size={16} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* QR Code */}
+                  <div className="text-center">
+                    <label className="block text-sm font-medium text-gray-700 mb-4">
+                      QR Code for Easy Sharing
+                    </label>
+                    <div className="inline-block p-4 bg-white border-2 border-gray-200 rounded-lg">
+                      <img 
+                        src={generateQRCode(showLinkGenerator)} 
+                        alt="QR Code"
+                        className="w-32 h-32"
+                      />
+                    </div>
+                    <div className="mt-2">
+                      <button 
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = generateQRCode(showLinkGenerator);
+                          link.download = `${showLinkGenerator.slug}-qr-code.png`;
+                          link.click();
+                        }}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        Download QR Code
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Link Analytics Preview */}
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <h3 className="font-semibold text-blue-800 mb-2">📊 Link Analytics</h3>
+                    <p className="text-blue-700 text-sm">
+                      Track clicks, conversions, and earnings for this specific link in your dashboard.
+                      All sales through this link will be automatically attributed to you.
+                    </p>
+                  </div>
+
+                  {/* Quick Share Buttons */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Quick Share
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {socialPlatforms.slice(0, 6).map((platform) => {
+                        const Icon = platform.icon;
+                        return (
+                          <button
+                            key={platform.id}
+                            onClick={() => shareToSocialMedia(showLinkGenerator, platform.id)}
+                            className={`flex items-center justify-center space-x-2 py-2 px-3 ${platform.color} text-white rounded-lg hover:opacity-90 transition-opacity text-sm`}
+                          >
+                            <Icon size={16} />
+                            <span>{platform.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Share Modal */}
+        {showShareModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-lg w-full">
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Share Product</h2>
+                    <p className="text-gray-600">{showShareModal.name}</p>
+                  </div>
+                  <button 
+                    onClick={() => setShowShareModal(null)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {socialPlatforms.map((platform) => {
+                    const Icon = platform.icon;
+                    return (
+                      <button
+                        key={platform.id}
+                        onClick={() => {
+                          shareToSocialMedia(showShareModal, platform.id);
+                          setShowShareModal(null);
+                        }}
+                        className={`flex items-center space-x-3 p-4 ${platform.color} text-white rounded-lg hover:opacity-90 transition-opacity`}
+                      >
+                        <Icon size={20} />
+                        <span className="font-medium">{platform.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setShowShareModal(null);
+                      setShowLinkGenerator(showShareModal);
+                    }}
+                    className="w-full flex items-center justify-center space-x-2 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                  >
+                    <Zap size={16} />
+                    <span>Advanced Link Options</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Product Detail Modal */}
         {selectedProduct && (
@@ -446,38 +747,25 @@ const ResellersMarketplace = () => {
                       </div>
                     </div>
 
-                    {/* Unique Link */}
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <h3 className="font-semibold text-blue-800 mb-2">Your Unique Tracking Link</h3>
-                      <div className="flex items-center space-x-2">
-                        <code className="flex-1 bg-white px-3 py-2 rounded border text-sm">
-                          {generateUniqueLink(selectedProduct)}
-                        </code>
-                        <button 
-                          onClick={() => copyUniqueLink(selectedProduct)}
-                          className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                        >
-                          <Copy size={16} />
-                        </button>
-                      </div>
-                      <p className="text-xs text-blue-700 mt-2">
-                        All sales through this link will be tracked to your account for commission
-                      </p>
-                    </div>
-
                     {/* Actions */}
                     <div className="flex space-x-3">
                       <button 
                         onClick={() => {
-                          addToCart(selectedProduct);
                           setSelectedProduct(null);
+                          setShowLinkGenerator(selectedProduct);
                         }}
                         className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                       >
-                        Add to Cart
+                        Get Referral Link
                       </button>
-                      <button className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                        Visit Supplier Store
+                      <button 
+                        onClick={() => {
+                          setSelectedProduct(null);
+                          setShowShareModal(selectedProduct);
+                        }}
+                        className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Share Now
                       </button>
                     </div>
                   </div>
