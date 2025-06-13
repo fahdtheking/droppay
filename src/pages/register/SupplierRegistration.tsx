@@ -1,11 +1,24 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Upload, Check, FileText, Building, Globe, ArrowLeft } from 'lucide-react';
+import { ChevronRight, Upload, Check, FileText, Building, Globe, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import AgentSlot from '../../components/AgentSlot';
 
 const SupplierRegistration = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { register } = useAuth();
+  
   const [formData, setFormData] = useState({
+    // Account Info
+    email: '',
+    password: '',
+    confirmPassword: '',
+    
+    // Company Info
     companyName: '',
     legalName: '',
     taxId: '',
@@ -14,15 +27,18 @@ const SupplierRegistration = () => {
     contactEmail: '',
     contactPhone: '',
     businessType: '',
-    annualRevenue: '',
-    description: ''
+    description: '',
+    
+    // Terms
+    agreeToTerms: false
   });
   const [uploadedDocs, setUploadedDocs] = useState<string[]>([]);
 
   const steps = [
-    { number: 1, title: 'Legal Information', icon: Building },
-    { number: 2, title: 'Document Upload', icon: Upload },
-    { number: 3, title: 'Review & Submit', icon: Check }
+    { number: 1, title: 'Account Setup', icon: Building },
+    { number: 2, title: 'Company Information', icon: Globe },
+    { number: 3, title: 'Document Upload', icon: Upload },
+    { number: 4, title: 'Review & Submit', icon: Check }
   ];
 
   const requiredDocs = [
@@ -36,8 +52,9 @@ const SupplierRegistration = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value
     });
+    setError('');
   };
 
   const handleDocUpload = (docName: string) => {
@@ -47,7 +64,7 @@ const SupplierRegistration = () => {
   };
 
   const nextStep = () => {
-    if (currentStep < 3) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -55,6 +72,41 @@ const SupplierRegistration = () => {
   const prevStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (!formData.agreeToTerms) {
+      setError('Please agree to the terms and conditions');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      await register({
+        email: formData.email,
+        password: formData.password,
+        companyName: formData.companyName,
+        legalName: formData.legalName,
+        taxId: formData.taxId,
+        country: formData.country,
+        address: formData.address,
+        contactEmail: formData.contactEmail,
+        contactPhone: formData.contactPhone,
+        businessType: formData.businessType,
+        description: formData.description
+      }, 'supplier');
+    } catch (err: any) {
+      setError(err.message || 'Registration failed');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -109,7 +161,7 @@ const SupplierRegistration = () => {
           </div>
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-center mb-12">
+          <div className="flex items-center justify-center mb-12 overflow-x-auto">
             {steps.map((step, index) => {
               const Icon = step.icon;
               const isActive = currentStep === step.number;
@@ -137,10 +189,90 @@ const SupplierRegistration = () => {
 
           {/* Form Content */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            {/* Step 1: Legal Information */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
+                <p className="text-red-800 text-sm">{error}</p>
+              </div>
+            )}
+
+            {/* Step 1: Account Setup */}
             {currentStep === 1 && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Legal Information</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Setup</h2>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="your@company.com"
+                    />
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Password *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          name="password"
+                          value={formData.password}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Create a strong password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Confirm Password *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          name="confirmPassword"
+                          value={formData.confirmPassword}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Confirm your password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Company Information */}
+            {currentStep === 2 && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Company Information</h2>
                 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
@@ -152,6 +284,7 @@ const SupplierRegistration = () => {
                       name="companyName"
                       value={formData.companyName}
                       onChange={handleInputChange}
+                      required
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter your company name"
                     />
@@ -166,6 +299,7 @@ const SupplierRegistration = () => {
                       name="legalName"
                       value={formData.legalName}
                       onChange={handleInputChange}
+                      required
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Legal registered name"
                     />
@@ -173,7 +307,7 @@ const SupplierRegistration = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tax ID / VAT Number *
+                      Tax ID / VAT Number
                     </label>
                     <input
                       type="text"
@@ -193,6 +327,7 @@ const SupplierRegistration = () => {
                       name="country"
                       value={formData.country}
                       onChange={handleInputChange}
+                      required
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="">Select country</option>
@@ -213,6 +348,7 @@ const SupplierRegistration = () => {
                       name="address"
                       value={formData.address}
                       onChange={handleInputChange}
+                      required
                       rows={3}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter complete business address"
@@ -228,6 +364,7 @@ const SupplierRegistration = () => {
                       name="contactEmail"
                       value={formData.contactEmail}
                       onChange={handleInputChange}
+                      required
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="contact@company.com"
                     />
@@ -242,16 +379,31 @@ const SupplierRegistration = () => {
                       name="contactPhone"
                       value={formData.contactPhone}
                       onChange={handleInputChange}
+                      required
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Business Description
+                    </label>
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      rows={3}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Describe your business and products"
                     />
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Step 2: Document Upload */}
-            {currentStep === 2 && (
+            {/* Step 3: Document Upload */}
+            {currentStep === 3 && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Document Upload</h2>
                 <p className="text-gray-600 mb-8">
@@ -286,14 +438,18 @@ const SupplierRegistration = () => {
               </div>
             )}
 
-            {/* Step 3: Review & Submit */}
-            {currentStep === 3 && (
+            {/* Step 4: Review & Submit */}
+            {currentStep === 4 && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Review & Submit</h2>
                 
                 <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-                  <h3 className="font-semibold text-gray-900 mb-4">Company Information</h3>
+                  <h3 className="font-semibold text-gray-900 mb-4">Account Information</h3>
                   <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Email:</span>
+                      <p className="font-medium">{formData.email || 'Not provided'}</p>
+                    </div>
                     <div>
                       <span className="text-gray-600">Company Name:</span>
                       <p className="font-medium">{formData.companyName || 'Not provided'}</p>
@@ -301,10 +457,6 @@ const SupplierRegistration = () => {
                     <div>
                       <span className="text-gray-600">Legal Name:</span>
                       <p className="font-medium">{formData.legalName || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Tax ID:</span>
-                      <p className="font-medium">{formData.taxId || 'Not provided'}</p>
                     </div>
                     <div>
                       <span className="text-gray-600">Country:</span>
@@ -321,6 +473,23 @@ const SupplierRegistration = () => {
                       {uploadedDocs.length} of {requiredDocs.length} documents uploaded
                     </p>
                   </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    name="agreeToTerms"
+                    checked={formData.agreeToTerms}
+                    onChange={handleInputChange}
+                    required
+                    className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label className="text-sm text-gray-600">
+                    I agree to the{' '}
+                    <a href="#" className="text-blue-600 hover:underline">Terms of Service</a>
+                    {' '}and{' '}
+                    <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a>
+                  </label>
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -347,10 +516,20 @@ const SupplierRegistration = () => {
               </button>
 
               <button
-                onClick={currentStep === 3 ? () => alert('Application submitted!') : nextStep}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                onClick={currentStep === 4 ? handleSubmit : nextStep}
+                disabled={isSubmitting}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
-                {currentStep === 3 ? 'Submit Application' : 'Next Step'}
+                {isSubmitting ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Submitting...</span>
+                  </div>
+                ) : currentStep === 4 ? (
+                  'Submit Application'
+                ) : (
+                  'Next Step'
+                )}
               </button>
             </div>
           </div>

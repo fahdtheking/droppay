@@ -24,16 +24,16 @@ const LoginPage = () => {
     e.preventDefault();
     try {
       await login(formData.email, formData.password);
-    } catch (err) {
-      setError('Invalid email or password');
+    } catch (err: any) {
+      setError(err.message || 'Invalid email or password');
     }
   };
 
   const demoAccounts = [
-    { email: 'supplier@example.com', role: 'Supplier', description: 'Manage marketplace & products' },
-    { email: 'client@example.com', role: 'Client', description: 'Shop & track orders' },
-    { email: 'reseller@example.com', role: 'Reseller', description: 'Sell products & earn commissions' },
-    { email: 'admin@example.com', role: 'Admin', description: 'Platform management' }
+    { email: 'supplier@techcorp.com', role: 'Supplier', description: 'Manage marketplace & products' },
+    { email: 'john@example.com', role: 'Client', description: 'Shop & track orders' },
+    { email: 'sarah@example.com', role: 'Reseller', description: 'Sell products & earn commissions' },
+    { email: 'admin@droppay.com', role: 'Admin', description: 'Platform management' }
   ];
 
   return (
