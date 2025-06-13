@@ -29,11 +29,16 @@ import {
   Mail,
   Link as LinkIcon,
   CheckCircle,
-  Zap
+  Zap,
+  UserPlus,
+  ArrowRight
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import AgentSlot from '../components/AgentSlot';
 
 const ResellersMarketplace = () => {
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('popular');
   const [viewMode, setViewMode] = useState('grid');
@@ -43,9 +48,14 @@ const ResellersMarketplace = () => {
   const [showShareModal, setShowShareModal] = useState<any>(null);
   const [copiedLink, setCopiedLink] = useState<string>('');
 
+  // Check if user is a reseller (can generate referral links)
+  const isReseller = user?.role === 'reseller';
+  const isClient = user?.role === 'client';
+  const isAdmin = user?.role === 'admin';
+
   // Mock reseller ID - in real app this would come from auth context
-  const resellerId = 'sarah-j-2024';
-  const resellerName = 'Sarah Johnson';
+  const resellerId = user?.role === 'reseller' ? 'sarah-j-2024' : null;
+  const resellerName = user?.name || 'User';
 
   const categories = [
     { id: 'all', label: 'All Products', count: 1247 },
@@ -168,6 +178,8 @@ const ResellersMarketplace = () => {
 
   // Generate unique tracking link for reseller
   const generateTrackingLink = (product: any, campaign?: string) => {
+    if (!resellerId) return `https://${product.supplierUrl}/product/${product.slug}`;
+    
     const baseUrl = `https://${product.supplierUrl}`;
     const productPath = `/product/${product.slug}`;
     const trackingParams = new URLSearchParams({
@@ -183,6 +195,7 @@ const ResellersMarketplace = () => {
 
   // Generate short link for easier sharing
   const generateShortLink = (product: any, campaign?: string) => {
+    if (!resellerId) return `https://droppay.link/product-${product.id}`;
     const trackingId = `${resellerId}-${product.id}-${Date.now().toString(36)}`;
     return `https://droppay.link/${trackingId}`;
   };
@@ -230,20 +243,50 @@ const ResellersMarketplace = () => {
     { id: 'email', name: 'Email', icon: Mail, color: 'bg-gray-600' }
   ];
 
+  // Get page title and description based on user role
+  const getPageInfo = () => {
+    if (isReseller) {
+      return {
+        title: 'Resellers Marketplace',
+        description: 'Discover products to resell and earn commissions with unique tracking links',
+        agentName: 'Product Discovery AI',
+        agentDescription: 'I help you find profitable products and generate optimized referral links for maximum conversions'
+      };
+    } else if (isClient) {
+      return {
+        title: 'Product Marketplace',
+        description: 'Discover and purchase premium products from verified suppliers',
+        agentName: 'Shopping Assistant AI',
+        agentDescription: 'I help you find the best products, compare prices, and track your orders'
+      };
+    } else {
+      return {
+        title: 'Marketplace',
+        description: 'Browse products and suppliers on our platform',
+        agentName: 'Marketplace AI',
+        agentDescription: 'I help you navigate our marketplace and find what you need'
+      };
+    }
+  };
+
+  const pageInfo = getPageInfo();
+
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Resellers Marketplace</h1>
-            <p className="text-gray-600">Discover products to resell and earn commissions with unique tracking links</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{pageInfo.title}</h1>
+            <p className="text-gray-600">{pageInfo.description}</p>
           </div>
           <div className="flex items-center space-x-3 mt-4 sm:mt-0">
-            <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              <Store size={16} />
-              <span>My Store</span>
-            </button>
+            {isReseller && (
+              <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <Store size={16} />
+                <span>My Store</span>
+              </button>
+            )}
             <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors relative">
               <ShoppingCart size={16} />
               <span>Cart ({cart.length})</span>
@@ -259,32 +302,88 @@ const ResellersMarketplace = () => {
         {/* AI Agent */}
         <div className="mb-8">
           <AgentSlot 
-            agentName="Product Discovery AI"
-            description="I help you find profitable products and generate optimized referral links for maximum conversions"
+            agentName={pageInfo.agentName}
+            description={pageInfo.agentDescription}
           />
         </div>
 
-        {/* Reseller Stats Banner */}
-        <div className="bg-gradient-to-r from-green-600 to-blue-600 rounded-xl p-6 mb-8 text-white">
-          <div className="grid md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold">$2,847</div>
-              <div className="text-green-100 text-sm">Total Earnings</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">156</div>
-              <div className="text-green-100 text-sm">Products Shared</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">89</div>
-              <div className="text-green-100 text-sm">Successful Sales</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">3.2%</div>
-              <div className="text-green-100 text-sm">Conversion Rate</div>
+        {/* Role-specific Banner */}
+        {isReseller && (
+          <div className="bg-gradient-to-r from-green-600 to-blue-600 rounded-xl p-6 mb-8 text-white">
+            <div className="grid md:grid-cols-4 gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold">$2,847</div>
+                <div className="text-green-100 text-sm">Total Earnings</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">156</div>
+                <div className="text-green-100 text-sm">Products Shared</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">89</div>
+                <div className="text-green-100 text-sm">Successful Sales</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">3.2%</div>
+                <div className="text-green-100 text-sm">Conversion Rate</div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {isClient && (
+          <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 mb-8 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold mb-2">Welcome to Our Marketplace</h2>
+                <p className="text-purple-100 mb-4">Discover premium products from verified suppliers worldwide</p>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Package size={16} />
+                    <span>1,200+ Products</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Truck size={16} />
+                    <span>Free shipping on orders $50+</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex space-x-3">
+                <button className="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                  Track Orders
+                </button>
+                <button className="bg-white/20 text-white px-4 py-2 rounded-lg hover:bg-white/30 transition-colors">
+                  View Wishlist
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Upgrade to Reseller CTA for Clients */}
+        {isClient && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <Users className="text-yellow-600" size={24} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-yellow-800">Want to Earn Money?</h3>
+                  <p className="text-yellow-700">Become a reseller and earn commissions by sharing products with others!</p>
+                </div>
+              </div>
+              <Link
+                to="/register/reseller"
+                className="flex items-center space-x-2 bg-yellow-600 text-white px-6 py-3 rounded-lg hover:bg-yellow-700 transition-colors"
+              >
+                <UserPlus size={16} />
+                <span>Become Reseller</span>
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Search and Filters */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
@@ -319,7 +418,7 @@ const ResellersMarketplace = () => {
                 className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="popular">Most Popular</option>
-                <option value="commission">Highest Commission</option>
+                {isReseller && <option value="commission">Highest Commission</option>}
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
                 <option value="rating">Highest Rated</option>
@@ -363,20 +462,24 @@ const ResellersMarketplace = () => {
                   >
                     <Eye size={16} className="text-gray-600" />
                   </button>
-                  <button 
-                    onClick={() => setShowLinkGenerator(product)}
-                    className="p-2 bg-white rounded-full hover:bg-gray-50 transition-colors"
-                    title="Generate Link"
-                  >
-                    <LinkIcon size={16} className="text-gray-600" />
-                  </button>
-                  <button 
-                    onClick={() => setShowShareModal(product)}
-                    className="p-2 bg-white rounded-full hover:bg-gray-50 transition-colors"
-                    title="Share Product"
-                  >
-                    <Share2 size={16} className="text-gray-600" />
-                  </button>
+                  {isReseller && (
+                    <>
+                      <button 
+                        onClick={() => setShowLinkGenerator(product)}
+                        className="p-2 bg-white rounded-full hover:bg-gray-50 transition-colors"
+                        title="Generate Link"
+                      >
+                        <LinkIcon size={16} className="text-gray-600" />
+                      </button>
+                      <button 
+                        onClick={() => setShowShareModal(product)}
+                        className="p-2 bg-white rounded-full hover:bg-gray-50 transition-colors"
+                        title="Share Product"
+                      >
+                        <Share2 size={16} className="text-gray-600" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -418,18 +521,22 @@ const ResellersMarketplace = () => {
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-bold text-gray-900">${product.price}</span>
-                    <span className="text-sm text-gray-600">Cost: ${product.cost}</span>
+                    {isReseller && (
+                      <span className="text-sm text-gray-600">Cost: ${product.cost}</span>
+                    )}
                   </div>
                   
-                  <div className="bg-green-50 rounded-lg p-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-green-800">Your Commission:</span>
-                      <div className="text-right">
-                        <span className="text-lg font-bold text-green-600">${product.commissionAmount}</span>
-                        <span className="text-xs text-green-700 block">({product.commission}%)</span>
+                  {isReseller && (
+                    <div className="bg-green-50 rounded-lg p-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-green-800">Your Commission:</span>
+                        <div className="text-right">
+                          <span className="text-lg font-bold text-green-600">${product.commissionAmount}</span>
+                          <span className="text-xs text-green-700 block">({product.commission}%)</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Inventory and Shipping */}
@@ -446,229 +553,261 @@ const ResellersMarketplace = () => {
 
                 {/* Actions */}
                 <div className="space-y-2">
-                  <button 
-                    onClick={() => setShowLinkGenerator(product)}
-                    className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center space-x-2"
-                  >
-                    <LinkIcon size={16} />
-                    <span>Get Referral Link</span>
-                  </button>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button 
-                      onClick={() => addToCart(product)}
-                      className="flex items-center justify-center space-x-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-                    >
-                      <Plus size={14} />
-                      <span>Cart</span>
-                    </button>
-                    <button 
-                      onClick={() => setShowShareModal(product)}
-                      className="flex items-center justify-center space-x-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-                    >
-                      <Share2 size={14} />
-                      <span>Share</span>
-                    </button>
-                  </div>
+                  {isReseller ? (
+                    <>
+                      <button 
+                        onClick={() => setShowLinkGenerator(product)}
+                        className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center space-x-2"
+                      >
+                        <LinkIcon size={16} />
+                        <span>Get Referral Link</span>
+                      </button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button 
+                          onClick={() => addToCart(product)}
+                          className="flex items-center justify-center space-x-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                        >
+                          <Plus size={14} />
+                          <span>Cart</span>
+                        </button>
+                        <button 
+                          onClick={() => setShowShareModal(product)}
+                          className="flex items-center justify-center space-x-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                        >
+                          <Share2 size={14} />
+                          <span>Share</span>
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={() => addToCart(product)}
+                        className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center space-x-2"
+                      >
+                        <ShoppingCart size={16} />
+                        <span>Add to Cart</span>
+                      </button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button className="flex items-center justify-center space-x-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+                          <Heart size={14} />
+                          <span>Wishlist</span>
+                        </button>
+                        <button 
+                          onClick={() => window.open(`https://${product.supplierUrl}`, '_blank')}
+                          className="flex items-center justify-center space-x-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                        >
+                          <ExternalLink size={14} />
+                          <span>Visit Store</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Link Generator Modal */}
-        {showLinkGenerator && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Generate Referral Link</h2>
-                    <p className="text-gray-600">{showLinkGenerator.name}</p>
-                  </div>
-                  <button 
-                    onClick={() => setShowLinkGenerator(null)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="space-y-6">
-                  {/* Campaign Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Campaign Name (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g., summer-sale, instagram-promo"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Help track which campaigns perform best
-                    </p>
-                  </div>
-
-                  {/* Generated Links */}
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Full Tracking Link
-                      </label>
-                      <div className="flex items-center space-x-2">
-                        <code className="flex-1 bg-gray-50 px-3 py-2 rounded border text-sm break-all">
-                          {generateTrackingLink(showLinkGenerator)}
-                        </code>
-                        <button 
-                          onClick={() => copyToClipboard(generateTrackingLink(showLinkGenerator))}
-                          className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                        >
-                          {copiedLink === generateTrackingLink(showLinkGenerator) ? (
-                            <CheckCircle size={16} />
-                          ) : (
-                            <Copy size={16} />
-                          )}
-                        </button>
+        {/* Reseller-only Modals */}
+        {isReseller && (
+          <>
+            {/* Link Generator Modal */}
+            {showLinkGenerator && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-6">
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900">Generate Referral Link</h2>
+                        <p className="text-gray-600">{showLinkGenerator.name}</p>
                       </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Short Link (Easier to Share)
-                      </label>
-                      <div className="flex items-center space-x-2">
-                        <code className="flex-1 bg-gray-50 px-3 py-2 rounded border text-sm">
-                          {generateShortLink(showLinkGenerator)}
-                        </code>
-                        <button 
-                          onClick={() => copyToClipboard(generateShortLink(showLinkGenerator))}
-                          className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                        >
-                          {copiedLink === generateShortLink(showLinkGenerator) ? (
-                            <CheckCircle size={16} />
-                          ) : (
-                            <Copy size={16} />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* QR Code */}
-                  <div className="text-center">
-                    <label className="block text-sm font-medium text-gray-700 mb-4">
-                      QR Code for Easy Sharing
-                    </label>
-                    <div className="inline-block p-4 bg-white border-2 border-gray-200 rounded-lg">
-                      <img 
-                        src={generateQRCode(showLinkGenerator)} 
-                        alt="QR Code"
-                        className="w-32 h-32"
-                      />
-                    </div>
-                    <div className="mt-2">
                       <button 
-                        onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = generateQRCode(showLinkGenerator);
-                          link.download = `${showLinkGenerator.slug}-qr-code.png`;
-                          link.click();
-                        }}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        onClick={() => setShowLinkGenerator(null)}
+                        className="text-gray-400 hover:text-gray-600"
                       >
-                        Download QR Code
+                        ✕
                       </button>
                     </div>
-                  </div>
 
-                  {/* Link Analytics Preview */}
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <h3 className="font-semibold text-blue-800 mb-2">📊 Link Analytics</h3>
-                    <p className="text-blue-700 text-sm">
-                      Track clicks, conversions, and earnings for this specific link in your dashboard.
-                      All sales through this link will be automatically attributed to you.
-                    </p>
-                  </div>
+                    <div className="space-y-6">
+                      {/* Campaign Name */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Campaign Name (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g., summer-sale, instagram-promo"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Help track which campaigns perform best
+                        </p>
+                      </div>
 
-                  {/* Quick Share Buttons */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Quick Share
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {socialPlatforms.slice(0, 6).map((platform) => {
+                      {/* Generated Links */}
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Full Tracking Link
+                          </label>
+                          <div className="flex items-center space-x-2">
+                            <code className="flex-1 bg-gray-50 px-3 py-2 rounded border text-sm break-all">
+                              {generateTrackingLink(showLinkGenerator)}
+                            </code>
+                            <button 
+                              onClick={() => copyToClipboard(generateTrackingLink(showLinkGenerator))}
+                              className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            >
+                              {copiedLink === generateTrackingLink(showLinkGenerator) ? (
+                                <CheckCircle size={16} />
+                              ) : (
+                                <Copy size={16} />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Short Link (Easier to Share)
+                          </label>
+                          <div className="flex items-center space-x-2">
+                            <code className="flex-1 bg-gray-50 px-3 py-2 rounded border text-sm">
+                              {generateShortLink(showLinkGenerator)}
+                            </code>
+                            <button 
+                              onClick={() => copyToClipboard(generateShortLink(showLinkGenerator))}
+                              className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            >
+                              {copiedLink === generateShortLink(showLinkGenerator) ? (
+                                <CheckCircle size={16} />
+                              ) : (
+                                <Copy size={16} />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* QR Code */}
+                      <div className="text-center">
+                        <label className="block text-sm font-medium text-gray-700 mb-4">
+                          QR Code for Easy Sharing
+                        </label>
+                        <div className="inline-block p-4 bg-white border-2 border-gray-200 rounded-lg">
+                          <img 
+                            src={generateQRCode(showLinkGenerator)} 
+                            alt="QR Code"
+                            className="w-32 h-32"
+                          />
+                        </div>
+                        <div className="mt-2">
+                          <button 
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = generateQRCode(showLinkGenerator);
+                              link.download = `${showLinkGenerator.slug}-qr-code.png`;
+                              link.click();
+                            }}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            Download QR Code
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Link Analytics Preview */}
+                      <div className="bg-blue-50 rounded-lg p-4">
+                        <h3 className="font-semibold text-blue-800 mb-2">📊 Link Analytics</h3>
+                        <p className="text-blue-700 text-sm">
+                          Track clicks, conversions, and earnings for this specific link in your dashboard.
+                          All sales through this link will be automatically attributed to you.
+                        </p>
+                      </div>
+
+                      {/* Quick Share Buttons */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                          Quick Share
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {socialPlatforms.slice(0, 6).map((platform) => {
+                            const Icon = platform.icon;
+                            return (
+                              <button
+                                key={platform.id}
+                                onClick={() => shareToSocialMedia(showLinkGenerator, platform.id)}
+                                className={`flex items-center justify-center space-x-2 py-2 px-3 ${platform.color} text-white rounded-lg hover:opacity-90 transition-opacity text-sm`}
+                              >
+                                <Icon size={16} />
+                                <span>{platform.name}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Share Modal */}
+            {showShareModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl max-w-lg w-full">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-6">
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-900">Share Product</h2>
+                        <p className="text-gray-600">{showShareModal.name}</p>
+                      </div>
+                      <button 
+                        onClick={() => setShowShareModal(null)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {socialPlatforms.map((platform) => {
                         const Icon = platform.icon;
                         return (
                           <button
                             key={platform.id}
-                            onClick={() => shareToSocialMedia(showLinkGenerator, platform.id)}
-                            className={`flex items-center justify-center space-x-2 py-2 px-3 ${platform.color} text-white rounded-lg hover:opacity-90 transition-opacity text-sm`}
+                            onClick={() => {
+                              shareToSocialMedia(showShareModal, platform.id);
+                              setShowShareModal(null);
+                            }}
+                            className={`flex items-center space-x-3 p-4 ${platform.color} text-white rounded-lg hover:opacity-90 transition-opacity`}
                           >
-                            <Icon size={16} />
-                            <span>{platform.name}</span>
+                            <Icon size={20} />
+                            <span className="font-medium">{platform.name}</span>
                           </button>
                         );
                       })}
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Share Modal */}
-        {showShareModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-lg w-full">
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900">Share Product</h2>
-                    <p className="text-gray-600">{showShareModal.name}</p>
-                  </div>
-                  <button 
-                    onClick={() => setShowShareModal(null)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {socialPlatforms.map((platform) => {
-                    const Icon = platform.icon;
-                    return (
+                    <div className="mt-6 pt-6 border-t border-gray-200">
                       <button
-                        key={platform.id}
                         onClick={() => {
-                          shareToSocialMedia(showShareModal, platform.id);
                           setShowShareModal(null);
+                          setShowLinkGenerator(showShareModal);
                         }}
-                        className={`flex items-center space-x-3 p-4 ${platform.color} text-white rounded-lg hover:opacity-90 transition-opacity`}
+                        className="w-full flex items-center justify-center space-x-2 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
                       >
-                        <Icon size={20} />
-                        <span className="font-medium">{platform.name}</span>
+                        <Zap size={16} />
+                        <span>Advanced Link Options</span>
                       </button>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <button
-                    onClick={() => {
-                      setShowShareModal(null);
-                      setShowLinkGenerator(showShareModal);
-                    }}
-                    className="w-full flex items-center justify-center space-x-2 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-                  >
-                    <Zap size={16} />
-                    <span>Advanced Link Options</span>
-                  </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            )}
+          </>
         )}
 
         {/* Product Detail Modal */}
@@ -729,44 +868,79 @@ const ResellersMarketplace = () => {
                     </div>
 
                     {/* Pricing Details */}
-                    <div className="bg-green-50 rounded-lg p-4">
-                      <h3 className="font-semibold text-green-800 mb-3">Profit Breakdown</h3>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-700">Selling Price:</span>
-                          <span className="font-medium">${selectedProduct.price}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-700">Your Cost:</span>
-                          <span className="font-medium">${selectedProduct.cost}</span>
-                        </div>
-                        <div className="flex justify-between border-t border-green-200 pt-2">
-                          <span className="font-medium text-green-800">Your Commission ({selectedProduct.commission}%):</span>
-                          <span className="font-bold text-green-600">${selectedProduct.commissionAmount}</span>
+                    {isReseller ? (
+                      <div className="bg-green-50 rounded-lg p-4">
+                        <h3 className="font-semibold text-green-800 mb-3">Profit Breakdown</h3>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-700">Selling Price:</span>
+                            <span className="font-medium">${selectedProduct.price}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-700">Your Cost:</span>
+                            <span className="font-medium">${selectedProduct.cost}</span>
+                          </div>
+                          <div className="flex justify-between border-t border-green-200 pt-2">
+                            <span className="font-medium text-green-800">Your Commission ({selectedProduct.commission}%):</span>
+                            <span className="font-bold text-green-600">${selectedProduct.commissionAmount}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="bg-blue-50 rounded-lg p-4">
+                        <h3 className="font-semibold text-blue-800 mb-3">Pricing</h3>
+                        <div className="flex items-center space-x-4">
+                          <span className="text-3xl font-bold text-blue-600">${selectedProduct.price}</span>
+                          <div className="text-sm text-blue-700">
+                            <p>{selectedProduct.shipping}</p>
+                            <p>{selectedProduct.inventory} in stock</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Actions */}
                     <div className="flex space-x-3">
-                      <button 
-                        onClick={() => {
-                          setSelectedProduct(null);
-                          setShowLinkGenerator(selectedProduct);
-                        }}
-                        className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                      >
-                        Get Referral Link
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedProduct(null);
-                          setShowShareModal(selectedProduct);
-                        }}
-                        className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        Share Now
-                      </button>
+                      {isReseller ? (
+                        <>
+                          <button 
+                            onClick={() => {
+                              setSelectedProduct(null);
+                              setShowLinkGenerator(selectedProduct);
+                            }}
+                            className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                          >
+                            Get Referral Link
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setSelectedProduct(null);
+                              setShowShareModal(selectedProduct);
+                            }}
+                            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            Share Now
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => {
+                              addToCart(selectedProduct);
+                              setSelectedProduct(null);
+                            }}
+                            className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                          >
+                            Add to Cart
+                          </button>
+                          <button 
+                            onClick={() => window.open(`https://${selectedProduct.supplierUrl}`, '_blank')}
+                            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            Visit Store
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
