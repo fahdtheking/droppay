@@ -1,9 +1,30 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Shield, Zap, Globe, TrendingUp, Users, Wallet, Store, ShoppingCart } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import AgentSlot from '../components/AgentSlot';
 
 const LandingPage = () => {
+  const { user, getDashboardRoute } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect authenticated users to their dashboard
+  useEffect(() => {
+    if (user) {
+      const dashboardRoute = getDashboardRoute();
+      navigate(dashboardRoute, { replace: true });
+    }
+  }, [user, navigate, getDashboardRoute]);
+
+  // Don't render landing page content if user is authenticated
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   const features = [
     {
       icon: Shield,
