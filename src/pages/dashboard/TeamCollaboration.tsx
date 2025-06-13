@@ -35,21 +35,23 @@ const TeamCollaboration = () => {
       id: 'alpha-sellers',
       name: 'Alpha Sellers',
       members: 12,
-      totalSales: 145680,
-      avgSales: 12140,
+      combinedSales: 145680, // Total of all individual sales
+      avgIndividualSales: 12140,
       milestone: 'Gold Tier',
       progress: 78,
-      role: 'leader'
+      role: 'leader',
+      myPersonalSales: 28450 // Your individual contribution
     },
     {
       id: 'tech-innovators',
       name: 'Tech Innovators',
       members: 8,
-      totalSales: 89420,
-      avgSales: 11177,
+      combinedSales: 89420,
+      avgIndividualSales: 11177,
       milestone: 'Silver Tier',
       progress: 45,
-      role: 'member'
+      role: 'member',
+      myPersonalSales: 15680
     }
   ];
 
@@ -59,19 +61,19 @@ const TeamCollaboration = () => {
       name: 'Sarah Chen',
       avatar: 'SC',
       personalSales: 18450,
-      commission: 2767,
+      personalCommission: 2767,
       rank: 1,
       streak: 12,
       specialties: ['Software', 'SaaS'],
       lastActive: '2 hours ago',
-      contributions: 24
+      contributions: 24 // Knowledge/resource contributions
     },
     {
       id: 2,
       name: 'Mike Rodriguez',
       avatar: 'MR',
       personalSales: 15680,
-      commission: 2352,
+      personalCommission: 2352,
       rank: 2,
       streak: 8,
       specialties: ['Electronics', 'Gadgets'],
@@ -83,7 +85,7 @@ const TeamCollaboration = () => {
       name: 'Emma Thompson',
       avatar: 'ET',
       personalSales: 13920,
-      commission: 2088,
+      personalCommission: 2088,
       rank: 3,
       streak: 15,
       specialties: ['Fashion', 'Lifestyle'],
@@ -95,7 +97,7 @@ const TeamCollaboration = () => {
       name: 'David Park',
       avatar: 'DP',
       personalSales: 12340,
-      commission: 1851,
+      personalCommission: 1851,
       rank: 4,
       streak: 6,
       specialties: ['Health', 'Fitness'],
@@ -141,29 +143,32 @@ const TeamCollaboration = () => {
     {
       id: 1,
       name: 'Bronze Collective',
-      target: 50000,
+      target: 50000, // Combined individual sales target
       current: 48320,
-      reward: '$500 team bonus + Bronze badges',
+      reward: '$500 shared bonus pool + Bronze badges for all',
       deadline: '2024-02-01',
-      status: 'active'
+      status: 'active',
+      description: 'When team reaches $50K in combined individual sales'
     },
     {
       id: 2,
       name: 'Silver Surge',
       target: 100000,
       current: 48320,
-      reward: '$1,200 team bonus + Silver badges + AI tool credits',
+      reward: '$1,200 shared bonus pool + Silver badges + AI tool credits',
       deadline: '2024-03-15',
-      status: 'upcoming'
+      status: 'upcoming',
+      description: 'When team reaches $100K in combined individual sales'
     },
     {
       id: 3,
       name: 'Gold Rush',
       target: 200000,
       current: 48320,
-      reward: '$3,000 team bonus + Gold badges + Premium AI access',
+      reward: '$3,000 shared bonus pool + Gold badges + Premium AI access',
       deadline: '2024-06-30',
-      status: 'upcoming'
+      status: 'upcoming',
+      description: 'When team reaches $200K in combined individual sales'
     }
   ];
 
@@ -171,26 +176,28 @@ const TeamCollaboration = () => {
     {
       id: 1,
       name: 'Spring Tech Launch',
-      type: 'Collaborative',
+      type: 'Collaborative Marketing',
       participants: 8,
-      budget: 2400,
+      sharedBudget: 2400,
       spent: 1680,
       leads: 156,
       conversions: 23,
       status: 'active',
-      endDate: '2024-02-15'
+      endDate: '2024-02-15',
+      description: 'Pooled advertising budget for tech products'
     },
     {
       id: 2,
       name: 'Valentine\'s Special',
       type: 'Cross-Promotion',
       participants: 5,
-      budget: 1200,
+      sharedBudget: 1200,
       spent: 890,
       leads: 89,
       conversions: 12,
       status: 'active',
-      endDate: '2024-02-14'
+      endDate: '2024-02-14',
+      description: 'Joint promotion across different product categories'
     }
   ];
 
@@ -244,8 +251,17 @@ const TeamCollaboration = () => {
         <div className="mb-8">
           <AgentSlot 
             agentName="Team Collaboration AI"
-            description="I help optimize team dynamics, suggest collaboration strategies, and track collective performance"
+            description="I help optimize team dynamics, suggest collaboration strategies, and track collective achievements"
           />
+        </div>
+
+        {/* Important Notice */}
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8">
+          <h3 className="font-semibold text-green-800 mb-2">🤝 Collaboration Benefits</h3>
+          <p className="text-green-700 text-sm">
+            <strong>Your earnings come from your personal sales only.</strong> Teams help you share knowledge, pool marketing resources, 
+            and unlock milestone bonuses when the group reaches combined sales targets. Everyone wins through collaboration!
+          </p>
         </div>
 
         {/* Team Selector */}
@@ -270,17 +286,21 @@ const TeamCollaboration = () => {
                     {team.role}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4 text-sm mb-3">
                   <div>
                     <span className="text-gray-600">Members:</span>
                     <p className="font-medium">{team.members}</p>
                   </div>
                   <div>
-                    <span className="text-gray-600">Total Sales:</span>
-                    <p className="font-medium">${team.totalSales.toLocaleString()}</p>
+                    <span className="text-gray-600">Combined Sales:</span>
+                    <p className="font-medium">${team.combinedSales.toLocaleString()}</p>
                   </div>
                 </div>
-                <div className="mt-3">
+                <div className="text-sm mb-3">
+                  <span className="text-gray-600">Your Personal Sales:</span>
+                  <p className="font-medium text-green-600">${team.myPersonalSales.toLocaleString()}</p>
+                </div>
+                <div>
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-gray-600">{team.milestone}</span>
                     <span className="font-medium">{team.progress}%</span>
@@ -333,45 +353,45 @@ const TeamCollaboration = () => {
                     <div className="bg-blue-50 rounded-lg p-4">
                       <div className="flex items-center space-x-2 mb-2">
                         <DollarSign className="text-blue-600" size={20} />
-                        <span className="font-medium text-blue-800">Total Sales</span>
+                        <span className="font-medium text-blue-800">Combined Sales</span>
                       </div>
                       <p className="text-2xl font-bold text-blue-600">$145,680</p>
-                      <p className="text-sm text-blue-700">+18.5% this month</p>
+                      <p className="text-sm text-blue-700">Sum of individual sales</p>
                     </div>
                     
                     <div className="bg-green-50 rounded-lg p-4">
                       <div className="flex items-center space-x-2 mb-2">
                         <TrendingUp className="text-green-600" size={20} />
-                        <span className="font-medium text-green-800">Avg per Member</span>
+                        <span className="font-medium text-green-800">Your Contribution</span>
                       </div>
-                      <p className="text-2xl font-bold text-green-600">$12,140</p>
-                      <p className="text-sm text-green-700">Above target</p>
+                      <p className="text-2xl font-bold text-green-600">$28,450</p>
+                      <p className="text-sm text-green-700">Your personal sales</p>
                     </div>
                     
                     <div className="bg-purple-50 rounded-lg p-4">
                       <div className="flex items-center space-x-2 mb-2">
                         <Award className="text-purple-600" size={20} />
-                        <span className="font-medium text-purple-800">Team Rank</span>
+                        <span className="font-medium text-purple-800">Milestone Bonus</span>
                       </div>
-                      <p className="text-2xl font-bold text-purple-600">#3</p>
-                      <p className="text-sm text-purple-700">In region</p>
+                      <p className="text-2xl font-bold text-purple-600">$1,240</p>
+                      <p className="text-sm text-purple-700">From team achievements</p>
                     </div>
                   </div>
 
                   {/* Sales Chart Placeholder */}
                   <div className="bg-gray-50 rounded-lg p-6">
-                    <h3 className="font-semibold text-gray-900 mb-4">Monthly Sales Trend</h3>
+                    <h3 className="font-semibold text-gray-900 mb-4">Individual Sales Contributions</h3>
                     <div className="space-y-3">
-                      {['Jan', 'Feb', 'Mar', 'Apr'].map((month, index) => (
-                        <div key={month} className="flex items-center space-x-3">
-                          <span className="w-8 text-sm text-gray-600">{month}</span>
+                      {teamMembers.slice(0, 4).map((member, index) => (
+                        <div key={member.id} className="flex items-center space-x-3">
+                          <span className="w-16 text-sm text-gray-600">{member.name.split(' ')[0]}</span>
                           <div className="flex-1 bg-gray-200 rounded-full h-3">
                             <div 
                               className="bg-blue-600 h-3 rounded-full"
-                              style={{ width: `${60 + index * 10}%` }}
+                              style={{ width: `${(member.personalSales / 20000) * 100}%` }}
                             ></div>
                           </div>
-                          <span className="text-sm font-medium">${(25000 + index * 5000).toLocaleString()}</span>
+                          <span className="text-sm font-medium">${member.personalSales.toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
@@ -394,8 +414,8 @@ const TeamCollaboration = () => {
                     <button className="w-full flex items-center space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
                       <Megaphone className="text-green-600" size={20} />
                       <div className="text-left">
-                        <h3 className="font-medium text-gray-900">Start Campaign</h3>
-                        <p className="text-sm text-gray-600">Launch joint marketing</p>
+                        <h3 className="font-medium text-gray-900">Pool Resources</h3>
+                        <p className="text-sm text-gray-600">Join marketing campaign</p>
                       </div>
                     </button>
                     
@@ -420,8 +440,9 @@ const TeamCollaboration = () => {
                         <div className="bg-orange-600 h-3 rounded-full" style={{ width: '96.6%' }}></div>
                       </div>
                       <div className="text-sm text-gray-600">
-                        <p>$48,320 / $50,000</p>
+                        <p>$48,320 / $50,000 combined sales</p>
                         <p className="text-orange-600 font-medium">$1,680 to go!</p>
+                        <p className="text-xs text-gray-500 mt-1">Bonus pool: $500 to share</p>
                       </div>
                     </div>
                   </div>
@@ -472,12 +493,12 @@ const TeamCollaboration = () => {
 
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
-                        <span className="text-sm text-gray-600">Commission</span>
-                        <p className="font-medium text-blue-600">${member.commission.toLocaleString()}</p>
+                        <span className="text-sm text-gray-600">Personal Commission</span>
+                        <p className="font-medium text-blue-600">${member.personalCommission.toLocaleString()}</p>
                       </div>
                       <div>
-                        <span className="text-sm text-gray-600">Contributions</span>
-                        <p className="font-medium text-purple-600">{member.contributions}</p>
+                        <span className="text-sm text-gray-600">Knowledge Shared</span>
+                        <p className="font-medium text-purple-600">{member.contributions} items</p>
                       </div>
                     </div>
 
@@ -548,7 +569,7 @@ const TeamCollaboration = () => {
           {activeTab === 'campaigns' && (
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Joint Campaigns</h2>
+                <h2 className="text-xl font-bold text-gray-900">Joint Marketing Campaigns</h2>
                 <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                   <Plus size={16} />
                   <span>Create Campaign</span>
@@ -561,6 +582,7 @@ const TeamCollaboration = () => {
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-1">{campaign.name}</h3>
+                        <p className="text-sm text-gray-600 mb-2">{campaign.description}</p>
                         <div className="flex items-center space-x-4 text-sm text-gray-600">
                           <span>{campaign.type}</span>
                           <span>{campaign.participants} participants</span>
@@ -574,14 +596,14 @@ const TeamCollaboration = () => {
 
                     <div className="grid md:grid-cols-4 gap-6 mb-4">
                       <div>
-                        <span className="text-sm text-gray-600">Budget Used</span>
+                        <span className="text-sm text-gray-600">Shared Budget Used</span>
                         <p className="text-lg font-bold text-gray-900">
-                          ${campaign.spent.toLocaleString()} / ${campaign.budget.toLocaleString()}
+                          ${campaign.spent.toLocaleString()} / ${campaign.sharedBudget.toLocaleString()}
                         </p>
                         <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
                           <div 
                             className="bg-blue-600 h-2 rounded-full"
-                            style={{ width: `${(campaign.spent / campaign.budget) * 100}%` }}
+                            style={{ width: `${(campaign.spent / campaign.sharedBudget) * 100}%` }}
                           ></div>
                         </div>
                       </div>
@@ -589,11 +611,13 @@ const TeamCollaboration = () => {
                       <div>
                         <span className="text-sm text-gray-600">Leads Generated</span>
                         <p className="text-lg font-bold text-blue-600">{campaign.leads}</p>
+                        <p className="text-xs text-gray-500">For all participants</p>
                       </div>
                       
                       <div>
-                        <span className="text-sm text-gray-600">Conversions</span>
+                        <span className="text-sm text-gray-600">Total Conversions</span>
                         <p className="text-lg font-bold text-green-600">{campaign.conversions}</p>
+                        <p className="text-xs text-gray-500">Individual sales tracked</p>
                       </div>
                       
                       <div>
@@ -601,7 +625,14 @@ const TeamCollaboration = () => {
                         <p className="text-lg font-bold text-purple-600">
                           {((campaign.conversions / campaign.leads) * 100).toFixed(1)}%
                         </p>
+                        <p className="text-xs text-gray-500">Campaign effectiveness</p>
                       </div>
+                    </div>
+
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                      <p className="text-yellow-800 text-sm">
+                        <strong>Note:</strong> Each member keeps 100% of their individual sales commissions from this campaign.
+                      </p>
                     </div>
 
                     <div className="flex space-x-3">
@@ -621,7 +652,15 @@ const TeamCollaboration = () => {
           {/* Milestones Tab */}
           {activeTab === 'milestones' && (
             <div className="p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Team Milestones & Rewards</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Team Milestones & Shared Rewards</h2>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <h3 className="font-semibold text-blue-800 mb-2">How Milestones Work</h3>
+                <p className="text-blue-700 text-sm">
+                  Milestones are based on <strong>combined individual sales</strong> from all team members. 
+                  When reached, bonus pools are shared equally among active participants. Your personal commissions remain 100% yours.
+                </p>
+              </div>
               
               <div className="space-y-6">
                 {milestones.map((milestone) => (
@@ -629,9 +668,10 @@ const TeamCollaboration = () => {
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">{milestone.name}</h3>
-                        <p className="text-gray-600 mb-2">{milestone.reward}</p>
+                        <p className="text-gray-600 mb-2">{milestone.description}</p>
+                        <p className="text-sm font-medium text-gray-700 mb-2">{milestone.reward}</p>
                         <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          <span>Target: ${milestone.target.toLocaleString()}</span>
+                          <span>Target: ${milestone.target.toLocaleString()} combined sales</span>
                           <span>Deadline: {milestone.deadline}</span>
                         </div>
                       </div>
@@ -663,7 +703,7 @@ const TeamCollaboration = () => {
                     {milestone.status === 'active' && (
                       <div className="bg-blue-50 rounded-lg p-3">
                         <p className="text-sm text-blue-800">
-                          <strong>${(milestone.target - milestone.current).toLocaleString()}</strong> remaining to unlock this milestone!
+                          <strong>${(milestone.target - milestone.current).toLocaleString()}</strong> in combined individual sales needed to unlock this milestone!
                         </p>
                       </div>
                     )}
@@ -709,7 +749,20 @@ const TeamCollaboration = () => {
                             <span className="font-medium text-gray-900">Mike Rodriguez</span>
                             <span className="text-xs text-gray-500">1 hour ago</span>
                           </div>
-                          <p className="text-gray-700">Thanks Sarah! The email templates are working great for the tech campaign 🚀</p>
+                          <p className="text-gray-700">Thanks Sarah! The email templates are working great for my tech sales 🚀</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start space-x-3">
+                        <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                          ET
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-2 mb-1">
+                            <span className="font-medium text-gray-900">Emma Thompson</span>
+                            <span className="text-xs text-gray-500">30 min ago</span>
+                          </div>
+                          <p className="text-gray-700">We're so close to the Bronze milestone! My personal sales this week should help push us over 💪</p>
                         </div>
                       </div>
                     </div>
@@ -752,13 +805,13 @@ const TeamCollaboration = () => {
                     <h3 className="font-semibold text-gray-900 mb-3">Quick Actions</h3>
                     <div className="space-y-2">
                       <button className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded">
-                        📋 Share Strategy
+                        📋 Share Sales Strategy
                       </button>
                       <button className="w-full text-left px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded">
-                        🎯 Announce Goal
+                        🎯 Announce Personal Goal
                       </button>
                       <button className="w-full text-left px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 rounded">
-                        🏆 Celebrate Win
+                        🏆 Celebrate Sales Win
                       </button>
                     </div>
                   </div>
