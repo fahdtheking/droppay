@@ -147,32 +147,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Failed to create user account');
       }
 
-      // Create user profile in our users table
+      // Create user profile in our users table with proper field mapping
+      const userProfileData = {
+        id: authData.user.id,
+        email: userData.email,
+        name: userData.fullName || userData.companyName || userData.name,
+        role,
+        is_verified: role !== 'supplier', // Suppliers need verification
+      };
+
       const { error: profileError } = await supabase
         .from('users')
-        .insert({
-          id: authData.user.id,
-          email: userData.email,
-          name: userData.fullName || userData.companyName || userData.name,
-          role,
-          is_verified: role !== 'supplier', // Suppliers need verification
-        });
+        .insert(userProfileData);
 
       if (profileError) {
-        throw profileError;
+        console.error('Profile creation error:', profileError);
+        throw new Error('Failed to create user profile');
       }
 
-      // Create extended profile
+      // Create extended profile with proper field mapping
+      const extendedProfileData = {
+        user_id: authData.user.id,
+        country: userData.country,
+        currency: userData.currency || 'USD',
+        language: userData.language || 'en',
+        timezone: userData.timezone,
+        address: userData.address ? (typeof userData.address === 'string' ? { full_address: userData.address } : userData.address) : null,
+        preferences: userData.preferences || {},
+      };
+
       const { error: extendedProfileError } = await supabase
         .from('user_profiles')
-        .insert({
-          user_id: authData.user.id,
-          country: userData.country,
-          currency: userData.currency || 'USD',
-          language: userData.language || 'en',
-          address: userData.address ? JSON.stringify(userData.address) : null,
-          preferences: userData.preferences || {},
-        });
+        .insert(extendedProfileData);
 
       if (extendedProfileError) {
         console.warn('Failed to create extended profile:', extendedProfileError);
@@ -180,37 +186,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Create role-specific records
       if (role === 'supplier') {
+        // Generate unique store URL
+        const baseStoreUrl = userData.companyName?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'store';
+        const storeUrl = `${baseStoreUrl}-${Date.now().toString().slice(-4)}`;
+        
+        const supplierData = {
+          user_id: authData.user.id,
+          company_name: userData.companyName,
+          legal_name: userData.legalName || userData.companyName,
+          tax_id: userData.taxId,
+          business_type: userData.businessType,
+          store_url: storeUrl,
+          store_name: `${userData.companyName} Store`,
+          description: userData.description,
+          commission_rate: 15.0, // Default commission rate
+          status: 'pending',
+          verification_documents: [],
+          store_settings: {},
+        };
+
         const { error: supplierError } = await supabase
           .from('suppliers')
-          .insert({
-            user_id: authData.user.id,
-            company_name: userData.companyName,
-            legal_name: userData.legalName,
-            tax_id: userData.taxId,
-            store_url: userData.companyName?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'store',
-            store_name: userData.companyName + ' Store',
-            description: userData.description,
-            status: 'pending',
-          });
+          .insert(supplierData);
 
         if (supplierError) {
           console.warn('Failed to create supplier profile:', supplierError);
         }
       } else if (role === 'reseller') {
-        const referralCode = userData.fullName?.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 6) + Date.now().toString().slice(-4);
+        // Generate unique referral code
+        const nameCode = userData.fullName?.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 6) || 'USER';
+        const referralCode = `${nameCode}${Date.now().toString().slice(-4)}`;
         
+        const resellerData = {
+          user_id: authData.user.id,
+          reseller_type: userData.resellerType || 'solo',
+          referral_code: referralCode,
+          performance_tier: 'bronze',
+          total_sales: 0,
+          total_commission: 0,
+          team_bonus_earned: 0,
+          payout_info: userData.payoutInfo || {},
+        };
+
         const { error: resellerError } = await supabase
           .from('resellers')
-          .insert({
-            user_id: authData.user.id,
-            reseller_type: userData.resellerType || 'solo',
-            referral_code: referralCode,
-            performance_tier: 'bronze',
-            total_sales: 0,
-            total_commission: 0,
-            team_bonus_earned: 0,
-            payout_info: userData.payoutInfo || {},
-          });
+          .insert(resellerData);
 
         if (resellerError) {
           console.warn('Failed to create reseller profile:', resellerError);
@@ -222,7 +242,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Redirect based on role and verification status
       if (role === 'supplier' && !user?.is_verified) {
-        navigate('/supplier/verification-pending');
+        // For suppliers, redirect to a verification pending page or dashboard
+        navigate('/dashboard/supplier');
       } else {
         const dashboardRoute = getDashboardRoute();
         navigate(dashboardRoute);

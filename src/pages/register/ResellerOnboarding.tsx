@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import AgentSlot from '../../components/AgentSlot';
 
 const ResellerOnboarding = () => {
-  const [selectedRole, setSelectedRole] = useState<'solo' | 'team' | null>(null);
+  const [selectedRole, setSelectedRole] = useState<'solo' | 'team_leader' | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
@@ -19,6 +19,9 @@ const ResellerOnboarding = () => {
     confirmPassword: '',
     phone: '',
     country: '',
+    currency: 'USD',
+    timezone: '',
+    language: 'en',
     bankName: '',
     accountNumber: '',
     routingNumber: '',
@@ -26,12 +29,40 @@ const ResellerOnboarding = () => {
     agreementSigned: false
   });
 
+  const countries = [
+    { code: 'US', name: 'United States', currency: 'USD', timezone: 'America/New_York' },
+    { code: 'UK', name: 'United Kingdom', currency: 'GBP', timezone: 'Europe/London' },
+    { code: 'CA', name: 'Canada', currency: 'CAD', timezone: 'America/Toronto' },
+    { code: 'AU', name: 'Australia', currency: 'AUD', timezone: 'Australia/Sydney' },
+    { code: 'DE', name: 'Germany', currency: 'EUR', timezone: 'Europe/Berlin' },
+    { code: 'FR', name: 'France', currency: 'EUR', timezone: 'Europe/Paris' }
+  ];
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    });
+    
+    // Auto-set currency and timezone when country changes
+    if (name === 'country') {
+      const selectedCountry = countries.find(c => c.code === value);
+      if (selectedCountry) {
+        setFormData({
+          ...formData,
+          [name]: value,
+          currency: selectedCountry.currency,
+          timezone: selectedCountry.timezone
+        });
+      } else {
+        setFormData({
+          ...formData,
+          [name]: value
+        });
+      }
+    } else {
+      setFormData({
+        ...formData,
+        [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      });
+    }
     setError('');
   };
 
@@ -52,20 +83,36 @@ const ResellerOnboarding = () => {
     setError('');
 
     try {
-      await register({
+      // Map form data to match database schema
+      const registrationData = {
         email: formData.email,
         password: formData.password,
         fullName: formData.fullName,
         phone: formData.phone,
         country: formData.country,
+        currency: formData.currency,
+        timezone: formData.timezone,
+        language: formData.language,
         resellerType: selectedRole,
         payoutInfo: {
           bankName: formData.bankName,
           accountNumber: formData.accountNumber,
           routingNumber: formData.routingNumber,
           paypalEmail: formData.paypalEmail
+        },
+        preferences: {
+          notifications: {
+            email: true,
+            sms: false
+          },
+          marketing: {
+            email: true,
+            sms: false
+          }
         }
-      }, 'reseller');
+      };
+
+      await register(registrationData, 'reseller');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -151,7 +198,7 @@ const ResellerOnboarding = () => {
                 </div>
 
                 <div 
-                  onClick={() => setSelectedRole('team')}
+                  onClick={() => setSelectedRole('team_leader')}
                   className="cursor-pointer group border-2 border-gray-200 rounded-xl p-6 hover:border-purple-500 hover:bg-purple-50 transition-all duration-300"
                 >
                   <div className="text-center">
@@ -319,12 +366,45 @@ const ResellerOnboarding = () => {
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Select your country</option>
-                        <option value="US">United States</option>
-                        <option value="UK">United Kingdom</option>
-                        <option value="CA">Canada</option>
-                        <option value="AU">Australia</option>
-                        <option value="DE">Germany</option>
-                        <option value="FR">France</option>
+                        {countries.map(country => (
+                          <option key={country.code} value={country.code}>
+                            {country.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Currency
+                      </label>
+                      <input
+                        type="text"
+                        name="currency"
+                        value={formData.currency}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                        placeholder="Auto-filled based on country"
+                        readOnly
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Language
+                      </label>
+                      <select
+                        name="language"
+                        value={formData.language}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
                       </select>
                     </div>
                   </div>

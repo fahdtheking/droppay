@@ -13,6 +13,8 @@ const ClientRegistration = () => {
     phone: '',
     country: '',
     currency: 'USD',
+    timezone: '',
+    language: 'en',
     referralCode: '',
     agreeToTerms: false
   });
@@ -22,12 +24,52 @@ const ClientRegistration = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register } = useAuth();
 
+  const countries = [
+    { code: 'US', name: 'United States', currency: 'USD', timezone: 'America/New_York' },
+    { code: 'UK', name: 'United Kingdom', currency: 'GBP', timezone: 'Europe/London' },
+    { code: 'CA', name: 'Canada', currency: 'CAD', timezone: 'America/Toronto' },
+    { code: 'AU', name: 'Australia', currency: 'AUD', timezone: 'Australia/Sydney' },
+    { code: 'DE', name: 'Germany', currency: 'EUR', timezone: 'Europe/Berlin' },
+    { code: 'FR', name: 'France', currency: 'EUR', timezone: 'Europe/Paris' },
+    { code: 'JP', name: 'Japan', currency: 'JPY', timezone: 'Asia/Tokyo' },
+    { code: 'SG', name: 'Singapore', currency: 'SGD', timezone: 'Asia/Singapore' }
+  ];
+
+  const currencies = [
+    { code: 'USD', name: 'US Dollar' },
+    { code: 'EUR', name: 'Euro' },
+    { code: 'GBP', name: 'British Pound' },
+    { code: 'CAD', name: 'Canadian Dollar' },
+    { code: 'AUD', name: 'Australian Dollar' },
+    { code: 'JPY', name: 'Japanese Yen' },
+    { code: 'SGD', name: 'Singapore Dollar' }
+  ];
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    });
+    
+    // Auto-set currency and timezone when country changes
+    if (name === 'country') {
+      const selectedCountry = countries.find(c => c.code === value);
+      if (selectedCountry) {
+        setFormData({
+          ...formData,
+          [name]: value,
+          currency: selectedCountry.currency,
+          timezone: selectedCountry.timezone
+        });
+      } else {
+        setFormData({
+          ...formData,
+          [name]: value
+        });
+      }
+    } else {
+      setFormData({
+        ...formData,
+        [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      });
+    }
     setError('');
   };
 
@@ -48,15 +90,30 @@ const ClientRegistration = () => {
     setError('');
 
     try {
-      await register({
+      // Map form data to match database schema
+      const registrationData = {
         email: formData.email,
         password: formData.password,
         fullName: formData.fullName,
         phone: formData.phone,
         country: formData.country,
         currency: formData.currency,
-        referralCode: formData.referralCode
-      }, 'client');
+        timezone: formData.timezone,
+        language: formData.language,
+        referralCode: formData.referralCode,
+        preferences: {
+          notifications: {
+            email: true,
+            sms: false
+          },
+          marketing: {
+            email: true,
+            sms: false
+          }
+        }
+      };
+
+      await register(registrationData, 'client');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -258,14 +315,11 @@ const ClientRegistration = () => {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="">Select your country</option>
-                      <option value="US">United States</option>
-                      <option value="UK">United Kingdom</option>
-                      <option value="CA">Canada</option>
-                      <option value="AU">Australia</option>
-                      <option value="DE">Germany</option>
-                      <option value="FR">France</option>
-                      <option value="JP">Japan</option>
-                      <option value="SG">Singapore</option>
+                      {countries.map(country => (
+                        <option key={country.code} value={country.code}>
+                          {country.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -279,14 +333,45 @@ const ClientRegistration = () => {
                       onChange={handleInputChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="USD">USD - US Dollar</option>
-                      <option value="EUR">EUR - Euro</option>
-                      <option value="GBP">GBP - British Pound</option>
-                      <option value="CAD">CAD - Canadian Dollar</option>
-                      <option value="AUD">AUD - Australian Dollar</option>
-                      <option value="JPY">JPY - Japanese Yen</option>
-                      <option value="SGD">SGD - Singapore Dollar</option>
+                      {currencies.map(currency => (
+                        <option key={currency.code} value={currency.code}>
+                          {currency.code} - {currency.name}
+                        </option>
+                      ))}
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Language
+                    </label>
+                    <select
+                      name="language"
+                      value={formData.language}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="en">English</option>
+                      <option value="es">Spanish</option>
+                      <option value="fr">French</option>
+                      <option value="de">German</option>
+                      <option value="ja">Japanese</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Timezone
+                    </label>
+                    <input
+                      type="text"
+                      name="timezone"
+                      value={formData.timezone}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                      placeholder="Auto-filled based on country"
+                      readOnly
+                    />
                   </div>
                 </div>
               </div>

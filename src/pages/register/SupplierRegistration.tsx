@@ -22,11 +22,11 @@ const SupplierRegistration = () => {
     companyName: '',
     legalName: '',
     taxId: '',
+    businessType: '',
     country: '',
     address: '',
     contactEmail: '',
     contactPhone: '',
-    businessType: '',
     description: '',
     
     // Terms
@@ -47,6 +47,15 @@ const SupplierRegistration = () => {
     'Bank Account Verification',
     'Address Proof',
     'Director/Owner ID Copy'
+  ];
+
+  const businessTypes = [
+    'Corporation',
+    'LLC',
+    'Partnership',
+    'Sole Proprietorship',
+    'Non-Profit',
+    'Other'
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -75,6 +84,21 @@ const SupplierRegistration = () => {
     }
   };
 
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        return !!(formData.email && formData.password && formData.confirmPassword);
+      case 2:
+        return !!(formData.companyName && formData.legalName && formData.country && formData.address && formData.contactEmail && formData.contactPhone);
+      case 3:
+        return uploadedDocs.length >= 3; // Require at least 3 documents
+      case 4:
+        return formData.agreeToTerms;
+      default:
+        return true;
+    }
+  };
+
   const handleSubmit = async () => {
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
@@ -90,19 +114,30 @@ const SupplierRegistration = () => {
     setError('');
 
     try {
-      await register({
+      // Map form data to match database schema
+      const registrationData = {
         email: formData.email,
         password: formData.password,
         companyName: formData.companyName,
         legalName: formData.legalName,
         taxId: formData.taxId,
+        businessType: formData.businessType,
         country: formData.country,
         address: formData.address,
         contactEmail: formData.contactEmail,
         contactPhone: formData.contactPhone,
-        businessType: formData.businessType,
-        description: formData.description
-      }, 'supplier');
+        description: formData.description,
+        currency: 'USD', // Default currency
+        language: 'en', // Default language
+        preferences: {
+          notifications: {
+            email: true,
+            sms: false
+          }
+        }
+      };
+
+      await register(registrationData, 'supplier');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -333,6 +368,23 @@ const SupplierRegistration = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Business Type
+                    </label>
+                    <select
+                      name="businessType"
+                      value={formData.businessType}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select business type</option>
+                      {businessTypes.map(type => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Country *
                     </label>
                     <select
@@ -349,7 +401,24 @@ const SupplierRegistration = () => {
                       <option value="AU">Australia</option>
                       <option value="DE">Germany</option>
                       <option value="FR">France</option>
+                      <option value="JP">Japan</option>
+                      <option value="SG">Singapore</option>
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Contact Phone *
+                    </label>
+                    <input
+                      type="tel"
+                      name="contactPhone"
+                      value={formData.contactPhone}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="+1 (555) 123-4567"
+                    />
                   </div>
 
                   <div className="md:col-span-2">
@@ -382,21 +451,6 @@ const SupplierRegistration = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Contact Phone *
-                    </label>
-                    <input
-                      type="tel"
-                      name="contactPhone"
-                      value={formData.contactPhone}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="+1 (555) 123-4567"
-                    />
-                  </div>
-
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Business Description
@@ -419,7 +473,7 @@ const SupplierRegistration = () => {
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Document Upload</h2>
                 <p className="text-gray-600 mb-8">
-                  Please upload the following documents to verify your business
+                  Please upload the following documents to verify your business (minimum 3 required)
                 </p>
 
                 <div className="space-y-4">
@@ -447,6 +501,13 @@ const SupplierRegistration = () => {
                     </div>
                   ))}
                 </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-blue-800 text-sm">
+                    <strong>Note:</strong> You need to upload at least 3 documents to proceed. 
+                    Additional documents can be uploaded later from your dashboard.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -473,6 +534,14 @@ const SupplierRegistration = () => {
                     <div>
                       <span className="text-gray-600">Country:</span>
                       <p className="font-medium">{formData.country || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Business Type:</span>
+                      <p className="font-medium">{formData.businessType || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Contact Phone:</span>
+                      <p className="font-medium">{formData.contactPhone || 'Not provided'}</p>
                     </div>
                   </div>
                 </div>
@@ -507,7 +576,7 @@ const SupplierRegistration = () => {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-blue-800 text-sm">
                     <strong>Important:</strong> Your application will be reviewed within 24-48 hours. 
-                    You'll receive an email notification once approved.
+                    You'll receive an email notification once approved and can start setting up your marketplace.
                   </p>
                 </div>
               </div>
@@ -529,7 +598,7 @@ const SupplierRegistration = () => {
 
               <button
                 onClick={currentStep === 4 ? handleSubmit : nextStep}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !validateStep(currentStep)}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
                 {isSubmitting ? (
