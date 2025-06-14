@@ -22,11 +22,21 @@ const LoginPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.email || !formData.password) {
+      setError('Please enter both email and password');
+      return;
+    }
+
     try {
       await login(formData.email, formData.password);
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
     }
+  };
+
+  const handleDemoLogin = (email: string) => {
+    setFormData({ email, password: 'password' });
   };
 
   const demoAccounts = [
@@ -117,7 +127,7 @@ const LoginPage = () => {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !formData.email || !formData.password}
               className="w-full flex items-center justify-center space-x-2 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (
@@ -148,7 +158,8 @@ const LoginPage = () => {
             {demoAccounts.map((account, index) => (
               <button
                 key={index}
-                onClick={() => setFormData({ email: account.email, password: 'password' })}
+                type="button"
+                onClick={() => handleDemoLogin(account.email)}
                 className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center justify-between">
