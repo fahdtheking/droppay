@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Upload, Check, FileText, Building, Globe, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -11,6 +11,9 @@ const SupplierRegistration = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register } = useAuth();
+  
+  // Refs for file inputs
+  const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   
   const [formData, setFormData] = useState({
     // Account Info
@@ -33,6 +36,7 @@ const SupplierRegistration = () => {
     agreeToTerms: false
   });
   const [uploadedDocs, setUploadedDocs] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<{ [key: string]: File | null }>({});
 
   const steps = [
     { number: 1, title: 'Account Setup', icon: Building },
@@ -66,9 +70,27 @@ const SupplierRegistration = () => {
     setError('');
   };
 
+  const handleFileChange = (docName: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Update the list of uploaded files
+      setUploadedFiles({
+        ...uploadedFiles,
+        [docName]: file
+      });
+      
+      // Update the list of uploaded doc names
+      if (!uploadedDocs.includes(docName)) {
+        setUploadedDocs([...uploadedDocs, docName]);
+      }
+    }
+  };
+
   const handleDocUpload = (docName: string) => {
-    if (!uploadedDocs.includes(docName)) {
-      setUploadedDocs([...uploadedDocs, docName]);
+    // Trigger the file input click
+    if (fileInputRefs.current[docName]) {
+      fileInputRefs.current[docName]?.click();
     }
   };
 
@@ -487,7 +509,9 @@ const SupplierRegistration = () => {
                         {uploadedDocs.includes(doc) ? (
                           <div className="flex items-center space-x-2 text-green-600">
                             <Check size={20} />
-                            <span className="text-sm font-medium">Uploaded</span>
+                            <span className="text-sm font-medium">
+                              {uploadedFiles[doc]?.name || 'Uploaded'}
+                            </span>
                           </div>
                         ) : (
                           <button
@@ -497,6 +521,14 @@ const SupplierRegistration = () => {
                             Upload
                           </button>
                         )}
+                        {/* Hidden file input */}
+                        <input 
+                          type="file"
+                          ref={el => fileInputRefs.current[doc] = el}
+                          className="hidden"
+                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                          onChange={(e) => handleFileChange(doc, e)}
+                        />
                       </div>
                     </div>
                   ))}
@@ -553,6 +585,16 @@ const SupplierRegistration = () => {
                     <p className="font-medium text-green-600">
                       {uploadedDocs.length} of {requiredDocs.length} documents uploaded
                     </p>
+                    {uploadedDocs.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {uploadedDocs.map((doc, index) => (
+                          <div key={index} className="flex items-center space-x-2">
+                            <Check size={16} className="text-green-600" />
+                            <span>{doc} - {uploadedFiles[doc]?.name || 'File uploaded'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
