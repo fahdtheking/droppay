@@ -80,10 +80,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const getDashboardRoute = (): string => {
-    if (!user) return '/';
+  const getDashboardRoute = (userRole?: UserRole): string => {
+    const role = userRole || user?.role;
+    if (!role) return '/';
     
-    switch (user.role) {
+    switch (role) {
       case 'supplier':
         return '/dashboard/supplier';
       case 'client':
@@ -111,10 +112,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        await fetchUserProfile(data.user.id);
+        // Fetch user profile first
+        const { data: userData, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching user profile:', profileError);
+          throw new Error('Failed to load user profile');
+        }
+
+        // Set user data
+        setUser(userData);
         
-        // Redirect to appropriate dashboard
-        const dashboardRoute = getDashboardRoute();
+        // Navigate to appropriate dashboard using the fetched user data
+        const dashboardRoute = getDashboardRoute(userData.role);
         navigate(dashboardRoute);
       }
     } catch (error: any) {
@@ -237,17 +251,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // Fetch the complete user profile
-      await fetchUserProfile(authData.user.id);
+      // Set the user data
+      setUser(userProfileData as User);
 
-      // Redirect based on role and verification status
-      if (role === 'supplier' && !user?.is_verified) {
-        // For suppliers, redirect to a verification pending page or dashboard
-        navigate('/dashboard/supplier');
-      } else {
-        const dashboardRoute = getDashboardRoute();
-        navigate(dashboardRoute);
-      }
+      // Redirect based on role
+      const dashboardRoute = getDashboardRoute(role);
+      navigate(dashboardRoute);
     } catch (error: any) {
       console.error('Registration error:', error);
       throw new Error(error.message || 'Registration failed');
