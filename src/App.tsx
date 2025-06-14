@@ -96,9 +96,9 @@ function App() {
               </ProtectedRoute>
             } />
 
-            {/* Protected Routes - Admin Only */}
+            {/* Protected Routes - Admin and Staff */}
             <Route path="/dashboard/admin" element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute allowedRoles={['admin', 'moderator', 'analyst', 'support']}>
                 <Navigation />
                 <AdminControlCenter />
               </ProtectedRoute>
@@ -112,7 +112,7 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/marketplace" element={
-              <ProtectedRoute allowedRoles={['client', 'reseller', 'admin']}>
+              <ProtectedRoute allowedRoles={['client', 'reseller', 'admin', 'moderator', 'analyst', 'support']}>
                 <Navigation />
                 <ResellersMarketplace />
               </ProtectedRoute>

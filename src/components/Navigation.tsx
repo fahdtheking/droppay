@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Wallet, Users, Settings, Zap, BarChart3, UserPlus, Store, ShoppingCart, Package, User, LogOut } from 'lucide-react';
+import { Menu, X, Wallet, Users, Settings, Zap, BarChart3, UserPlus, Store, ShoppingCart, Package, User, LogOut, Shield, Eye } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Navigation = () => {
@@ -66,6 +66,24 @@ const Navigation = () => {
           { path: '/marketplace', label: 'Marketplace', icon: ShoppingCart },
           { path: '/dashboard/wallet', label: 'Wallet', icon: Wallet },
         ];
+
+      case 'moderator':
+        return [
+          { path: '/dashboard/admin', label: 'Moderation', icon: Shield },
+          { path: '/marketplace', label: 'Marketplace', icon: ShoppingCart },
+        ];
+
+      case 'analyst':
+        return [
+          { path: '/dashboard/admin', label: 'Analytics', icon: BarChart3 },
+          { path: '/marketplace', label: 'Marketplace', icon: Eye },
+        ];
+
+      case 'support':
+        return [
+          { path: '/dashboard/admin', label: 'Support Center', icon: Users },
+          { path: '/marketplace', label: 'Marketplace', icon: ShoppingCart },
+        ];
       
       default: // reseller
         return [
@@ -81,6 +99,32 @@ const Navigation = () => {
   };
 
   const navItems = getNavItems();
+
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Admin';
+      case 'supplier': return 'Supplier';
+      case 'reseller': return 'Reseller';
+      case 'client': return 'Client';
+      case 'moderator': return 'Moderator';
+      case 'analyst': return 'Analyst';
+      case 'support': return 'Support';
+      default: return role;
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'admin': return 'text-red-600 bg-red-50';
+      case 'supplier': return 'text-blue-600 bg-blue-50';
+      case 'reseller': return 'text-purple-600 bg-purple-50';
+      case 'client': return 'text-green-600 bg-green-50';
+      case 'moderator': return 'text-orange-600 bg-orange-50';
+      case 'analyst': return 'text-indigo-600 bg-indigo-50';
+      case 'support': return 'text-teal-600 bg-teal-50';
+      default: return 'text-gray-600 bg-gray-50';
+    }
+  };
 
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
@@ -120,14 +164,16 @@ const Navigation = () => {
 
           {/* User Menu */}
           <div className="hidden md:flex items-center space-x-4">
-            <div className="flex items-center space-x-2 px-3 py-2 bg-gray-100 rounded-lg">
+            <div className="flex items-center space-x-3 px-3 py-2 bg-gray-100 rounded-lg">
               <User size={16} className="text-gray-600" />
-              <span className="text-sm font-medium text-gray-700">
-                {user.name}
-              </span>
-              <span className="text-xs text-gray-500 capitalize">
-                ({user.role})
-              </span>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-gray-700">
+                  {user.name}
+                </span>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getRoleColor(user.role)}`}>
+                  {getRoleDisplayName(user.role)}
+                </span>
+              </div>
             </div>
             <button
               onClick={logout}
@@ -175,11 +221,16 @@ const Navigation = () => {
             {/* Mobile User Info */}
             <div className="px-4 py-3 border-t border-gray-200 mt-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <User size={16} className="text-gray-600" />
-                  <span className="text-sm font-medium text-gray-700">
-                    {user.name} ({user.role})
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-gray-700">
+                      {user.name}
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium w-fit ${getRoleColor(user.role)}`}>
+                      {getRoleDisplayName(user.role)}
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={logout}

@@ -1,18 +1,25 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, type User } from '../lib/supabase';
+import { supabase, type User, type UserProfile, type Supplier, type Reseller } from '../lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 
-export type UserRole = 'supplier' | 'client' | 'reseller' | 'admin';
+export type UserRole = 'supplier' | 'client' | 'reseller' | 'admin' | 'moderator' | 'analyst' | 'support';
+
+interface ExtendedUser extends User {
+  profile?: UserProfile;
+  supplier?: Supplier;
+  reseller?: Reseller;
+}
 
 interface AuthContextType {
-  user: User | null;
+  user: ExtendedUser | null;
   session: Session | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (userData: any, role: UserRole) => Promise<void>;
   isLoading: boolean;
   getDashboardRoute: () => string;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,7 +33,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<ExtendedUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
@@ -61,22 +68,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      // Fetch user data
+      const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error) {
-        console.error('Error fetching user profile:', error);
+      if (userError) {
+        console.error('Error fetching user:', userError);
+        setIsLoading(false);
         return;
       }
 
-      setUser(data);
+      // Fetch user profile
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      let extendedUser: ExtendedUser = {
+        ...userData,
+        profile: profileData || undefined
+      };
+
+      // Fetch role-specific data
+      if (userData.role === 'supplier') {
+        const { data: supplierData } = await supabase
+          .from('suppliers')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+        
+        extendedUser.supplier = supplierData || undefined;
+      } else if (userData.role === 'reseller') {
+        const { data: resellerData } = await supabase
+          .from('resellers')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+        
+        extendedUser.reseller = resellerData || undefined;
+      }
+
+      setUser(extendedUser);
     } catch (error) {
       console.error('Error fetching user profile:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const refreshUser = async () => {
+    if (session?.user) {
+      await fetchUserProfile(session.user.id);
     }
   };
 
@@ -93,6 +139,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return '/dashboard/reseller';
       case 'admin':
         return '/dashboard/admin';
+      case 'moderator':
+      case 'analyst':
+      case 'support':
+        return '/dashboard/admin'; // These roles use admin dashboard with restricted access
       default:
         return '/';
     }
@@ -112,24 +162,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        // Fetch user profile first
-        const { data: userData, error: profileError } = await supabase
+        // User profile will be fetched by the auth state change listener
+        // Navigate to appropriate dashboard
+        const { data: userData } = await supabase
           .from('users')
-          .select('*')
+          .select('role')
           .eq('id', data.user.id)
           .single();
 
-        if (profileError) {
-          console.error('Error fetching user profile:', profileError);
-          throw new Error('Failed to load user profile');
+        if (userData) {
+          const dashboardRoute = getDashboardRoute(userData.role);
+          navigate(dashboardRoute);
         }
-
-        // Set user data
-        setUser(userData);
-        
-        // Navigate to appropriate dashboard using the fetched user data
-        const dashboardRoute = getDashboardRoute(userData.role);
-        navigate(dashboardRoute);
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -150,7 +194,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (authError) {
-        // Handle specific error cases with user-friendly messages
         if (authError.message === 'User already registered' || authError.message.includes('user_already_exists')) {
           throw new Error('This email is already registered. Please try logging in instead.');
         }
@@ -161,7 +204,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Failed to create user account');
       }
 
-      // Create user profile in our users table with proper field mapping
+      // Create user profile in our users table
       const userProfileData = {
         id: authData.user.id,
         email: userData.email,
@@ -179,7 +222,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Failed to create user profile');
       }
 
-      // Create extended profile with proper field mapping
+      // Create extended profile
       const extendedProfileData = {
         user_id: authData.user.id,
         country: userData.country,
@@ -200,7 +243,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Create role-specific records
       if (role === 'supplier') {
-        // Generate unique store URL
         const baseStoreUrl = userData.companyName?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'store';
         const storeUrl = `${baseStoreUrl}-${Date.now().toString().slice(-4)}`;
         
@@ -213,10 +255,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           store_url: storeUrl,
           store_name: `${userData.companyName} Store`,
           description: userData.description,
-          commission_rate: 15.0, // Default commission rate
+          commission_rate: 15.0,
           status: 'pending',
           verification_documents: [],
           store_settings: {},
+          performance_metrics: {},
         };
 
         const { error: supplierError } = await supabase
@@ -227,7 +270,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.warn('Failed to create supplier profile:', supplierError);
         }
       } else if (role === 'reseller') {
-        // Generate unique referral code
         const nameCode = userData.fullName?.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 6) || 'USER';
         const referralCode = `${nameCode}${Date.now().toString().slice(-4)}`;
         
@@ -240,6 +282,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           total_commission: 0,
           team_bonus_earned: 0,
           payout_info: userData.payoutInfo || {},
+          performance_metrics: {},
         };
 
         const { error: resellerError } = await supabase
@@ -250,9 +293,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.warn('Failed to create reseller profile:', resellerError);
         }
       }
-
-      // Set the user data
-      setUser(userProfileData as User);
 
       // Redirect based on role
       const dashboardRoute = getDashboardRoute(role);
@@ -287,7 +327,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout,
       register,
       isLoading,
-      getDashboardRoute
+      getDashboardRoute,
+      refreshUser
     }}>
       {children}
     </AuthContext.Provider>
