@@ -6,6 +6,9 @@ import Navigation from './components/Navigation';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import VerifyEmailPage from './pages/auth/VerifyEmailPage';
 import SupplierRegistration from './pages/register/SupplierRegistration';
 import ClientRegistration from './pages/register/ClientRegistration';
 import ResellerOnboarding from './pages/register/ResellerOnboarding';
@@ -35,6 +38,11 @@ function App() {
             <Route path="/register/supplier" element={<SupplierRegistration />} />
             <Route path="/register/client" element={<ClientRegistration />} />
             <Route path="/register/reseller" element={<ResellerOnboarding />} />
+            
+            {/* Auth Routes */}
+            <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
 
             {/* Protected Routes - Supplier Only */}
             <Route path="/dashboard/supplier" element={

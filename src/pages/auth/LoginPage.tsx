@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const LoginPage = () => {
@@ -10,7 +10,8 @@ const LoginPage = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const { login, isLoading } = useAuth();
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const { login, isLoading, resendVerification } = useAuth();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -18,6 +19,7 @@ const LoginPage = () => {
       [e.target.name]: e.target.value
     });
     setError('');
+    setNeedsVerification(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,12 +33,31 @@ const LoginPage = () => {
     try {
       await login(formData.email, formData.password);
     } catch (err: any) {
-      setError(err.message || 'Invalid email or password');
+      const errorMessage = err.message || 'Invalid email or password';
+      
+      // Check if it's an email confirmation error
+      if (errorMessage.includes('Email not confirmed') || errorMessage.includes('email_not_confirmed')) {
+        setNeedsVerification(true);
+        setError('Please verify your email address before signing in.');
+      } else {
+        setError(errorMessage);
+      }
+    }
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      await resendVerification(formData.email);
+      alert('Verification email sent! Please check your inbox.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend verification email');
     }
   };
 
   const handleDemoLogin = (email: string) => {
     setFormData({ email, password: 'password' });
+    setError('');
+    setNeedsVerification(false);
   };
 
   const demoAccounts = [
@@ -45,6 +66,8 @@ const LoginPage = () => {
     { email: 'sarah@example.com', role: 'Reseller', description: 'Sell products & earn commissions' },
     { email: 'admin@droppay.com', role: 'Admin', description: 'Platform management' }
   ];
+
+  const isEmailAlreadyRegisteredError = error.includes('This email is already registered') || error.includes('User already registered');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center py-12 px-4">
@@ -68,7 +91,31 @@ const LoginPage = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-red-800 text-sm">{error}</p>
+                <div className="flex items-start space-x-2">
+                  <AlertCircle className="text-red-600 mt-0.5" size={16} />
+                  <div className="flex-1">
+                    <p className="text-red-800 text-sm">{error}</p>
+                    {needsVerification && (
+                      <button
+                        type="button"
+                        onClick={handleResendVerification}
+                        className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        Resend verification email
+                      </button>
+                    )}
+                    {isEmailAlreadyRegisteredError && (
+                      <div className="mt-2">
+                        <Link
+                          to="/register"
+                          className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          Go to Registration →
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -120,7 +167,7 @@ const LoginPage = () => {
                 <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
                 <span className="ml-2 text-sm text-gray-600">Remember me</span>
               </label>
-              <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
+              <Link to="/auth/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
                 Forgot password?
               </Link>
             </div>

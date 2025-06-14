@@ -17,6 +17,10 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (userData: any, role: UserRole) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, password: string) => Promise<void>;
+  resendVerification: (email: string) => Promise<void>;
+  verifyEmail: (token: string) => Promise<boolean>;
   isLoading: boolean;
   getDashboardRoute: () => string;
   refreshUser: () => Promise<void>;
@@ -225,10 +229,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Starting registration for role:', role);
       
-      // First, create the auth user
+      // First, create the auth user with email confirmation
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/verify-email`,
+          data: {
+            name: userData.fullName || userData.companyName || userData.name,
+            role: role
+          }
+        }
       });
 
       if (authError) {
@@ -245,6 +256,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log('Auth user created:', authData.user.id);
 
+      // If email confirmation is required, show message and don't create profile yet
+      if (!authData.session) {
+        throw new Error('Please check your email and click the verification link to complete registration.');
+      }
+
       // Wait a moment for the auth user to be fully created
       await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -254,7 +270,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: userData.email,
         name: userData.fullName || userData.companyName || userData.name,
         role,
-        is_verified: role !== 'supplier', // Suppliers need verification
+        is_verified: false, // Will be set to true after email verification
         is_active: true,
         failed_login_attempts: 0,
         is_locked: false,
@@ -367,6 +383,96 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const forgotPassword = async (email: string): Promise<void> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      console.error('Forgot password error:', error);
+      throw new Error(error.message || 'Failed to send reset email');
+    }
+  };
+
+  const resetPassword = async (token: string, password: string): Promise<void> => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Clear any failed login attempts
+      if (user) {
+        await supabase
+          .from('users')
+          .update({
+            failed_login_attempts: 0,
+            is_locked: false,
+            locked_until: null
+          })
+          .eq('id', user.id);
+      }
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      throw new Error(error.message || 'Failed to reset password');
+    }
+  };
+
+  const resendVerification = async (email: string): Promise<void> => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/verify-email`
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      console.error('Resend verification error:', error);
+      throw new Error(error.message || 'Failed to resend verification email');
+    }
+  };
+
+  const verifyEmail = async (token: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: token,
+        type: 'email'
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Update user verification status
+      if (data.user) {
+        await supabase
+          .from('users')
+          .update({
+            is_verified: true,
+            email_verified_at: new Date().toISOString()
+          })
+          .eq('id', data.user.id);
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error('Email verification error:', error);
+      return false;
+    }
+  };
+
   const logout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -388,6 +494,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       logout,
       register,
+      forgotPassword,
+      resetPassword,
+      resendVerification,
+      verifyEmail,
       isLoading,
       getDashboardRoute,
       refreshUser
