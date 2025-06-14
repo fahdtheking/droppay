@@ -39,20 +39,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
+    let mounted = true;
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      } else {
-        setIsLoading(false);
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', error);
+          if (mounted) {
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        if (mounted) {
+          setSession(session);
+          if (session?.user) {
+            await fetchUserProfile(session.user.id);
+          } else {
+            setIsLoading(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error in getInitialSession:', error);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-    });
+    };
+
+    getInitialSession();
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+
+      console.log('Auth state changed:', event, session?.user?.id);
+      
       setSession(session);
       
       if (session?.user) {
@@ -63,12 +89,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      // Fetch user data
+      console.log('Fetching user profile for:', userId);
+      
+      // Fetch user data with a simple query
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
@@ -81,35 +112,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // Fetch user profile
-      const { data: profileData } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+      if (!userData) {
+        console.log('No user data found');
+        setIsLoading(false);
+        return;
+      }
 
-      let extendedUser: ExtendedUser = {
-        ...userData,
-        profile: profileData || undefined
-      };
+      console.log('User data fetched:', userData);
 
-      // Fetch role-specific data
-      if (userData.role === 'supplier') {
-        const { data: supplierData } = await supabase
-          .from('suppliers')
+      let extendedUser: ExtendedUser = { ...userData };
+
+      // Try to fetch additional data but don't fail if it doesn't exist
+      try {
+        // Fetch user profile
+        const { data: profileData } = await supabase
+          .from('user_profiles')
           .select('*')
           .eq('user_id', userId)
-          .single();
-        
-        extendedUser.supplier = supplierData || undefined;
-      } else if (userData.role === 'reseller') {
-        const { data: resellerData } = await supabase
-          .from('resellers')
-          .select('*')
-          .eq('user_id', userId)
-          .single();
-        
-        extendedUser.reseller = resellerData || undefined;
+          .maybeSingle();
+
+        if (profileData) {
+          extendedUser.profile = profileData;
+        }
+
+        // Fetch role-specific data
+        if (userData.role === 'supplier') {
+          const { data: supplierData } = await supabase
+            .from('suppliers')
+            .select('*')
+            .eq('user_id', userId)
+            .maybeSingle();
+          
+          if (supplierData) {
+            extendedUser.supplier = supplierData;
+          }
+        } else if (userData.role === 'reseller') {
+          const { data: resellerData } = await supabase
+            .from('resellers')
+            .select('*')
+            .eq('user_id', userId)
+            .maybeSingle();
+          
+          if (resellerData) {
+            extendedUser.reseller = resellerData;
+          }
+        }
+      } catch (error) {
+        console.warn('Error fetching additional profile data:', error);
+        // Continue with basic user data
       }
 
       setUser(extendedUser);
@@ -142,7 +192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case 'moderator':
       case 'analyst':
       case 'support':
-        return '/dashboard/admin'; // These roles use admin dashboard with restricted access
+        return '/dashboard/admin';
       default:
         return '/';
     }
@@ -161,25 +211,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
-      if (data.user) {
-        // User profile will be fetched by the auth state change listener
-        // Navigate to appropriate dashboard
-        const { data: userData } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
-
-        if (userData) {
-          const dashboardRoute = getDashboardRoute(userData.role);
-          navigate(dashboardRoute);
-        }
-      }
+      // The auth state change listener will handle the rest
     } catch (error: any) {
       console.error('Login error:', error);
-      throw new Error(error.message || 'Login failed');
-    } finally {
       setIsLoading(false);
+      throw new Error(error.message || 'Login failed');
     }
   };
 
@@ -187,6 +223,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
+      console.log('Starting registration for role:', role);
+      
       // First, create the auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
@@ -194,6 +232,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (authError) {
+        console.error('Auth signup error:', authError);
         if (authError.message === 'User already registered' || authError.message.includes('user_already_exists')) {
           throw new Error('This email is already registered. Please try logging in instead.');
         }
@@ -204,6 +243,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Failed to create user account');
       }
 
+      console.log('Auth user created:', authData.user.id);
+
+      // Wait a moment for the auth user to be fully created
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // Create user profile in our users table
       const userProfileData = {
         id: authData.user.id,
@@ -211,7 +255,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: userData.fullName || userData.companyName || userData.name,
         role,
         is_verified: role !== 'supplier', // Suppliers need verification
+        is_active: true,
+        failed_login_attempts: 0,
+        is_locked: false,
+        two_factor_enabled: false,
       };
+
+      console.log('Creating user profile:', userProfileData);
 
       const { error: profileError } = await supabase
         .from('users')
@@ -219,89 +269,101 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (profileError) {
         console.error('Profile creation error:', profileError);
-        throw new Error('Failed to create user profile');
+        throw new Error('Failed to create user profile: ' + profileError.message);
       }
 
-      // Create extended profile
-      const extendedProfileData = {
-        user_id: authData.user.id,
-        country: userData.country,
-        currency: userData.currency || 'USD',
-        language: userData.language || 'en',
-        timezone: userData.timezone,
-        address: userData.address ? (typeof userData.address === 'string' ? { full_address: userData.address } : userData.address) : null,
-        preferences: userData.preferences || {},
-      };
+      console.log('User profile created successfully');
 
-      const { error: extendedProfileError } = await supabase
-        .from('user_profiles')
-        .insert(extendedProfileData);
+      // Create extended profile (optional)
+      try {
+        const extendedProfileData = {
+          user_id: authData.user.id,
+          country: userData.country,
+          currency: userData.currency || 'USD',
+          language: userData.language || 'en',
+          timezone: userData.timezone,
+          preferences: userData.preferences || {},
+          kyc_status: 'pending',
+          kyc_documents: [],
+          social_profiles: {},
+        };
 
-      if (extendedProfileError) {
-        console.warn('Failed to create extended profile:', extendedProfileError);
+        const { error: extendedProfileError } = await supabase
+          .from('user_profiles')
+          .insert(extendedProfileData);
+
+        if (extendedProfileError) {
+          console.warn('Failed to create extended profile:', extendedProfileError);
+        }
+      } catch (error) {
+        console.warn('Error creating extended profile:', error);
       }
 
       // Create role-specific records
-      if (role === 'supplier') {
-        const baseStoreUrl = userData.companyName?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'store';
-        const storeUrl = `${baseStoreUrl}-${Date.now().toString().slice(-4)}`;
-        
-        const supplierData = {
-          user_id: authData.user.id,
-          company_name: userData.companyName,
-          legal_name: userData.legalName || userData.companyName,
-          tax_id: userData.taxId,
-          business_type: userData.businessType,
-          store_url: storeUrl,
-          store_name: `${userData.companyName} Store`,
-          description: userData.description,
-          commission_rate: 15.0,
-          status: 'pending',
-          verification_documents: [],
-          store_settings: {},
-          performance_metrics: {},
-        };
+      try {
+        if (role === 'supplier') {
+          const baseStoreUrl = userData.companyName?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'store';
+          const storeUrl = `${baseStoreUrl}-${Date.now().toString().slice(-4)}`;
+          
+          const supplierData = {
+            user_id: authData.user.id,
+            company_name: userData.companyName,
+            legal_name: userData.legalName || userData.companyName,
+            tax_id: userData.taxId,
+            business_type: userData.businessType,
+            store_url: storeUrl,
+            store_name: `${userData.companyName} Store`,
+            description: userData.description,
+            commission_rate: 15.0,
+            status: 'pending',
+            verification_documents: [],
+            store_settings: {},
+            performance_metrics: {},
+          };
 
-        const { error: supplierError } = await supabase
-          .from('suppliers')
-          .insert(supplierData);
+          const { error: supplierError } = await supabase
+            .from('suppliers')
+            .insert(supplierData);
 
-        if (supplierError) {
-          console.warn('Failed to create supplier profile:', supplierError);
+          if (supplierError) {
+            console.warn('Failed to create supplier profile:', supplierError);
+          }
+        } else if (role === 'reseller') {
+          const nameCode = userData.fullName?.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 6) || 'USER';
+          const referralCode = `${nameCode}${Date.now().toString().slice(-4)}`;
+          
+          const resellerData = {
+            user_id: authData.user.id,
+            reseller_type: userData.resellerType || 'solo',
+            referral_code: referralCode,
+            performance_tier: 'bronze',
+            total_sales: 0,
+            total_commission: 0,
+            team_bonus_earned: 0,
+            payout_info: userData.payoutInfo || {},
+            performance_metrics: {},
+            status: 'active',
+          };
+
+          const { error: resellerError } = await supabase
+            .from('resellers')
+            .insert(resellerData);
+
+          if (resellerError) {
+            console.warn('Failed to create reseller profile:', resellerError);
+          }
         }
-      } else if (role === 'reseller') {
-        const nameCode = userData.fullName?.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 6) || 'USER';
-        const referralCode = `${nameCode}${Date.now().toString().slice(-4)}`;
-        
-        const resellerData = {
-          user_id: authData.user.id,
-          reseller_type: userData.resellerType || 'solo',
-          referral_code: referralCode,
-          performance_tier: 'bronze',
-          total_sales: 0,
-          total_commission: 0,
-          team_bonus_earned: 0,
-          payout_info: userData.payoutInfo || {},
-          performance_metrics: {},
-        };
-
-        const { error: resellerError } = await supabase
-          .from('resellers')
-          .insert(resellerData);
-
-        if (resellerError) {
-          console.warn('Failed to create reseller profile:', resellerError);
-        }
+      } catch (error) {
+        console.warn('Error creating role-specific profile:', error);
       }
 
-      // Redirect based on role
-      const dashboardRoute = getDashboardRoute(role);
-      navigate(dashboardRoute);
+      console.log('Registration completed successfully');
+      
+      // The auth state change listener will handle navigation
     } catch (error: any) {
       console.error('Registration error:', error);
-      throw new Error(error.message || 'Registration failed');
-    } finally {
       setIsLoading(false);
+      throw new Error(error.message || 'Registration failed');
     }
   };
 
